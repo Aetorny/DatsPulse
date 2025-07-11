@@ -1,4 +1,4 @@
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 import requests
 import time
 import random
@@ -16,11 +16,9 @@ class App:
     def __init__(self) -> None:
         self.scouts: list[Ant] = []
         self.soldiers: list[Ant] = []
-        self.soldiers_positions: set[tuple[int, int]] = set()
-        self.cells_around_base: Optional[set[tuple[int, int]]] = None
         self.workers: list[Ant] = []
-        self.moves: list[dict[str, Any]] = []
         self.turnNo = -1
+        self.worker = None
 
     def get_hex_path_odd_r(self,
         col1: int, row1: int, col2: int, row2: int
@@ -86,76 +84,47 @@ class App:
 
         return distance
 
-    def get_cells_around(self, col: int, row: int) -> list[tuple[int, int]]:
-        cells = [(col, row-1), (col, row+1), (col-1, row), (col+1, row)]
-        if row % 2 == 0:
-            temp_col = col - 1
-        else:
-            temp_col = col + 1
-        cells.append((temp_col, row-1))
-        cells.append((temp_col, row+1))
-        return cells
-
-    def move_soldiers_to_guard(self) -> None:
-        if len(self.soldiers) == 0:
-            return
-        assert self.cells_around_base, 'cells_around_base must not be None'
-
-        soldier = None
-        for soldier in self.soldiers:
-            if soldier.q == self.spot['q'] and soldier.r == self.spot['r']:
-                break
-        
-        empty_cells = list(self.cells_around_base.difference(self.soldiers_positions))
-        assert len(empty_cells) > 0, 'empty_cells must not be empty'
-        assert isinstance(soldier, Ant), 'soldier must be Ant'
-
-        empty_cells.sort(key=lambda cell: self.get_distance(soldier.q, soldier.r, cell[0], cell[1]))
-
-        for cell in empty_cells:
-            if self.get_distance(soldier.q, soldier.r, cell[0], cell[1]) == 1:
-                self.moves.append({
-                    'ant': soldier.id,
-                    'path': [{
-                        'q': cell[0],
-                        'r': cell[1]
-                    }]
-                })
-                return
-            elif self.get_distance(soldier.q, soldier.r, cell[0], cell[1]) == 2:
-                for home_cell in self.home:
-                    if home_cell == self.spot:
-                        continue
-                    if self.get_distance(cell[0], cell[1], home_cell['q'], home_cell['r']) == 1 \
-                        and self.get_distance(soldier.q, soldier.r, home_cell['q'], home_cell['r']) == 1:
-                        self.moves.append({
-                            'ant': soldier.id,
-                            'path': [{
-                                'q': home_cell['q'],
-                                'r': home_cell['r']
-                            }, {
-                                'q': cell[0],
-                                'r': cell[1]
-                            }]
-                        })
-                        return
+    def go_to_food(self) -> None:
+        moves = []
+        # for worker in self.workers:
+        worker = self.worker
+        if worker.food['amount'] == 0:
+            if len(self.food) == 0 or (len(self.food) > 0 and all([1 if food['type'] == 3 else 0 for food in self.food])):
+                closest_food = {'q': 0, 'r': 0}
             else:
-                cell1, cell2 = [cell for cell in self.home if cell != self.spot]
-                if self.get_distance(soldier.q, soldier.r, cell1['q'], cell1['r']) == 2:
-                    cell1, cell2 = cell2, cell1
-                self.moves.append({
-                    'ant': soldier.id,
-                    'path': [{
-                        'q': cell1['q'],
-                        'r': cell1['r']
-                    }, {
-                        'q': cell2['q'],
-                        'r': cell2['r']
-                    }, {
-                        'q': cell[0],
-                        'r': cell[1]
-                    }]
-                })
+                closest_food = min([food for food in self.food if food['type'] != 3], key=lambda f: self.get_distance(worker.q, worker.r, f['q'], f['r']))
+            path = self.get_hex_path_odd_r(worker.q, worker.r, closest_food['q'], closest_food['r'])
+        else:
+            h = max(self.home, key=lambda h:(h['q'], h['r']))
+            if h == self.spot:
+                h = min(self.home, key=lambda h:(h['q'], h['r']))
+            path = self.get_hex_path_odd_r(worker.q, worker.r, h['q'], h['r'])
+        print(path, worker.q, worker.r)
+        if len(path) == 0:
+            return print('no path', closest_food)
+        if path[0] == (worker.q, worker.r):
+            path = path[1:]
+        if len(path) > 4:
+            path = path[:4]
+        if path[0] == (self.spot['q'], self.spot['r']):
+            path = self.get_hex_path_odd_r(worker.q, worker.r, self.spot['q']+random.randint(0-2, 2), self.spot['r']+random.randint(-2, 2))
+            if len(path) == 0:
+                return print('no path', closest_food)
+            if path[0] == (worker.q, worker.r):
+                path = path[1:]
+            if len(path) > 4:
+                path = path[:4]
+        moves.append({
+            'ant': worker.id,
+            'path': [
+                {
+                    'q': path[i][0],
+                    'r': path[i][1]
+                } for i in range(len(path))
+            ]
+        })
+        print(path)
+        self.post_move(moves)
 
     def new_turn(self) -> None:
         self.scouts: list[Ant] = []
@@ -169,14 +138,16 @@ class App:
                 self.soldiers.append(Ant(ant))
             elif type_ == 0:
                 self.workers.append(Ant(ant))
-
-        assert self.cells_around_base, 'cells_around_base must not be None'
-        if len(self.soldiers)-1 < len(self.cells_around_base):
-            self.move_soldiers_to_guard()
-
+        if self.worker is None:
+            self.worker = self.workers[0]
+            self.id = self.worker.id
+            print(self.worker, self.worker.id)
+        for worker in self.workers:
+            if worker.id == self.id:
+                self.worker = worker
+        self.go_to_food()
 
     def get_arena(self) -> None:
-        self.moves = []
         response = requests.get(URL+'arena', headers=HEADERS)
 
         data: dict[str, Any] = response.json()
@@ -189,9 +160,6 @@ class App:
 
         # Список ваших юнитов
         self.ants: list[dict[str, Any]] = data['ants']
-        if len(self.ants) == 0:
-            time.sleep(1)
-            return
 
         # Видимые враги
         self.enemies: list[dict[str, Any]] = data['enemies']
@@ -201,18 +169,12 @@ class App:
 
         # Координаты вашего муравейника
         self.home: list[dict[str, Any]] = data['home']
-        if self.cells_around_base is None:
-            cells: list[tuple[int, int]] = []
-            for cell in self.home:
-                cells += self.get_cells_around(cell['q'], cell['r'])
-            temp = set(cells)
-            for cell in self.home:
-                temp.remove((cell['q'], cell['r']))
-            self.cells_around_base = temp
 
         # Видимые гексы карты
         self.map: list[dict[str, Any]] = data['map']
 
+        if len(self.map) == 0:
+            return
 
         self.nextTurnIn: int = data['nextTurnIn'] # Количество секунд до следующего хода
         self.score: int = data['score'] # Текущий счёт команды
@@ -220,9 +182,7 @@ class App:
         if data['turnNo'] != self.turnNo:
             self.turnNo = data['turnNo'] # Номер текущего хода
             self.new_turn()
-
-        self.post_move(self.moves) # type: ignore
-
+        
         time.sleep(self.nextTurnIn)
 
     def post_move(self, moves: list[dict[str, Any]]) -> None:
