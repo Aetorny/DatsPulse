@@ -65,7 +65,7 @@ class App:
             col, row = cube_to_oddr(*rounded)
             path.append((col, row))
 
-        return path[1:]
+        return path
 
 
     def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
@@ -87,11 +87,18 @@ class App:
         # for worker in self.workers:
         worker = self.worker
         if worker.food['amount'] == 0:
-            closest_food = min(self.food, key=lambda f: self.get_distance(worker.q, worker.r, f['q'], f['r']))
+            closest_food = min([food for food in self.food if food['type'] != 3], key=lambda f: self.get_distance(worker.q, worker.r, f['q'], f['r']))
             path = self.get_hex_path_odd_r(worker.q, worker.r, closest_food['q'], closest_food['r'])
         else:
             h = max(self.home, key=lambda h:(h['q'], h['r']))
+            if h == self.spot:
+                h = min(self.home, key=lambda h:(h['q'], h['r']))
             path = self.get_hex_path_odd_r(worker.q, worker.r, h['q'], h['r'])
+        print(path, worker.q, worker.r)
+        if len(path) == 0:
+            return print('no path', closest_food)
+        if path[0] == (worker.q, worker.r):
+            path = path[1:]
         if len(path) > 4:
             path = path[:4]
         moves.append({
@@ -103,7 +110,6 @@ class App:
                 } for i in range(len(path))
             ]
         })
-
         self.post_move(moves)
 
     def new_turn(self) -> None:
@@ -120,6 +126,7 @@ class App:
                 self.workers.append(Ant(ant))
         if self.worker is None:
             self.worker = self.workers[0]
+            print(self.worker, self.worker.id)
         self.go_to_food()
 
     def get_arena(self) -> None:
@@ -160,7 +167,7 @@ class App:
             "moves": moves
         }
 
-        requests.post(URL+'move', headers=HEADERS, json=data).json()
+        print(requests.post(URL+'move', headers=HEADERS, json=data).json())
 
     def register(self) -> None:
         print(requests.post(URL+'register', headers=HEADERS).json())
@@ -169,11 +176,11 @@ class App:
 def main() -> None:
     app = App()
     # print(app.get_hex_path_odd_r(3, 6, 4, 5))
-    app.register()
+    # app.register()
     import time
     while True:
-        time.sleep(1)
         app.get_arena()
+        time.sleep(1)
 
 
 if __name__ == '__main__':
