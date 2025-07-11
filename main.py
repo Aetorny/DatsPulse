@@ -1,5 +1,7 @@
 from typing import Any, Literal
 import requests
+import time
+import random
 
 from ant import Ant
 
@@ -101,6 +103,9 @@ class App:
             path = path[1:]
         if len(path) > 4:
             path = path[:4]
+        if path[0] == (self.spot['q'], self.spot['r']):
+            one = random.randint(0, 1)
+            path = self.get_hex_path_odd_r(worker.q, worker.r, self.spot[0]+one, self.spot[1]+one)
         moves.append({
             'ant': worker.id,
             'path': [
@@ -110,6 +115,7 @@ class App:
                 } for i in range(len(path))
             ]
         })
+        print(path)
         self.post_move(moves)
 
     def new_turn(self) -> None:
@@ -126,7 +132,11 @@ class App:
                 self.workers.append(Ant(ant))
         if self.worker is None:
             self.worker = self.workers[0]
+            self.id = self.worker.id
             print(self.worker, self.worker.id)
+        for worker in self.workers:
+            if worker.id == self.id:
+                self.worker = worker
         self.go_to_food()
 
     def get_arena(self) -> None:
@@ -155,19 +165,24 @@ class App:
         # Видимые гексы карты
         self.map: list[dict[str, Any]] = data['map']
 
+        if len(self.map) == 0:
+            return
+
         self.nextTurnIn: int = data['nextTurnIn'] # Количество секунд до следующего хода
         self.score: int = data['score'] # Текущий счёт команды
         self.spot: dict[Literal['q', 'r'], int] = data['spot'] # Координаты основного гекса муравейника
         if data['turnNo'] != self.turnNo:
             self.turnNo = data['turnNo'] # Номер текущего хода
             self.new_turn()
+        
+        time.sleep(self.nextTurnIn)
 
     def post_move(self, moves: list[dict[str, Any]]) -> None:
         data = {
             "moves": moves
         }
 
-        print(requests.post(URL+'move', headers=HEADERS, json=data).json())
+        requests.post(URL+'move', headers=HEADERS, json=data).json()
 
     def register(self) -> None:
         print(requests.post(URL+'register', headers=HEADERS).json())
@@ -176,11 +191,10 @@ class App:
 def main() -> None:
     app = App()
     # print(app.get_hex_path_odd_r(3, 6, 4, 5))
-    # app.register()
-    import time
+    app.register()
+
     while True:
         app.get_arena()
-        time.sleep(1)
 
 
 if __name__ == '__main__':
