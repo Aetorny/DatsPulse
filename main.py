@@ -12,20 +12,20 @@ HEADERS = {
 
 class App:
     def __init__(self) -> None:
-        self.scouts: dict[str, Ant] = {}
-        self.soldiers: dict[str, Ant] = {}
-        self.builders: dict[str, Ant] = {}
+        self.squads: list[dict[str, Ant]] = []
+        self.ants_to_squad: dict[str, int] = {}
         self.turnNo = -1
 
-    def new_turn(self) -> None:
+    def add_new_squad(self) -> None: # TODO
         ...
-        # for ant in self.ants:
-        #     if ant['type'] == 2:
-        #         self.scouts.append(Ant(ant))
-        #     elif ant['type'] == 1:
-        #         self.soldiers.append(Ant(ant))
-        #     elif ant['type'] == 0:
-        #         self.builders.append(Ant(ant))
+
+    def new_turn(self) -> None:
+        for ant in self.ants:
+            id_ = ant['id']
+            if id_ in self.ants_to_squad:
+                self.squads[self.ants_to_squad[id_]][id_] = Ant(ant)
+            else:
+                self.add_new_squad()
 
     def get_arena(self) -> None:
         response = requests.get(URL+'arena', headers=HEADERS)
@@ -33,10 +33,7 @@ class App:
         data: dict[str, Any] = response.json()
         if data.get('error', None):
             return print(data)
-        import json
-        with open('test.json', 'w') as f:
-            json.dump(data, f, indent=4)
-        print(data)
+
         # Список ваших юнитов
         self.ants: list[dict[str, Any]] = data['ants']
 
@@ -66,10 +63,13 @@ class App:
 
         _response = requests.post(URL+'move', headers=HEADERS, json=data)
 
+    def register(self) -> None:
+        print(requests.post(URL+'register', headers=HEADERS).json())
+
 
 def main() -> None:
     app = App()
-    app.get_arena()
+    app.register()
 
 
 if __name__ == '__main__':
