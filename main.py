@@ -34,9 +34,9 @@ class App:
         if data.get('error', None):
             return print(data)
 
-        # import json
-        # with open('test2.json', 'w') as f:
-        #     json.dump(data, f, indent=4)
+        import json
+        with open('test2.json', 'w') as f:
+            json.dump(data, f, indent=4)
 
         # Список ваших юнитов
         self.ants: list[dict[str, Any]] = data['ants']
@@ -60,6 +60,21 @@ class App:
             self.turnNo = data['turnNo'] # Номер текущего хода
             self.new_turn()
 
+    def move_all_ants(self) -> None:
+        moves = []
+        for ant in self.ants:
+            moves.append({
+                "ant": ant['id'],
+                "path": [
+                    {
+                        "q": ant['q']-1,
+                        "r": ant['r']
+                    }
+                ]
+            })
+
+        self.post_move(moves)
+
     def post_move(self, moves: list[dict[str, Any]]) -> None:
         data = {
             "moves": moves
@@ -74,7 +89,11 @@ class App:
 def main() -> None:
     app = App()
     # app.register()
-    app.get_arena()
+    # import time
+    # while True:
+    #     time.sleep(1)
+    #     app.get_arena()
+    #     app.move_all_ants()
 
 
 if __name__ == '__main__':
