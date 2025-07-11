@@ -1,7 +1,6 @@
 from typing import Any, Literal, Optional
 import requests
 import time
-import random
 
 from ant import Ant
 
@@ -22,9 +21,9 @@ def oddr_to_cube(col: int, row: int) -> tuple[int, int, int]:
      y = -x - z
      return (x, y, z)
 
-def neighbors(q: int, r: int):
+def neighbors(q: int, r: int) -> list[tuple[int, int]]:
     coords = oddr_to_cube(q, r)
-    output = []
+    output: list[tuple[int, int]] = []
     for offset in [(1, 0, -1), (1, -1, 0), (0, -1, 1), (-1, 0, 1), (-1, 1, 0), (0, 1, -1)]:
         output.append(cube_to_oddr(
             coords[0]+offset[0], coords[1]+offset[1], coords[2]+offset[2],))
@@ -67,7 +66,7 @@ class App:
         b = oddr_to_cube(col2, row2)
         N = max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
 
-        path = []
+        path: list[tuple[int, int]] = []
         if N == 0:
             return []
         for i in range(N + 1):
@@ -220,9 +219,8 @@ class App:
 
         # Видимые гексы карты
         self.map: list[dict[str, Any]] = data['map']
-        self.prep_map: dict[tuple[int, int], dict] = {}
+        self.prep_map: dict[tuple[int, int], dict[str, Any]] = {}
         self.prepare_map()
-
 
         self.nextTurnIn: int = data['nextTurnIn'] # Количество секунд до следующего хода
         self.score: int = data['score'] # Текущий счёт команды
@@ -231,10 +229,11 @@ class App:
             self.turnNo = data['turnNo'] # Номер текущего хода
             self.new_turn()
 
-        self.post_move(self.moves) # type: ignore
+        self.post_move(self.moves)
 
         time.sleep(self.nextTurnIn)
-    def prepare_map(self):
+
+    def prepare_map(self) -> None:
         for tile in self.map:
             self.prep_map[(tile["q"], tile["r"])] = tile
 
