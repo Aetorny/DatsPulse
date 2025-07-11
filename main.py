@@ -34,6 +34,10 @@ class App:
         if data.get('error', None):
             return print(data)
 
+        # import json
+        # with open('test2.json', 'w') as f:
+        #     json.dump(data, f, indent=4)
+
         # Список ваших юнитов
         self.ants: list[dict[str, Any]] = data['ants']
 
@@ -69,7 +73,8 @@ class App:
 
 def main() -> None:
     app = App()
-    app.register()
+    # app.register()
+    app.get_arena()
 
 
 if __name__ == '__main__':
