@@ -38,6 +38,8 @@ class App:
         self.workers: list[Ant] = []
         self.moves: list[dict[str, Any]] = []
         self.turnNo = -1
+        self.home_cell_1: Optional[tuple[int, int]] = None
+        self.home_cell_2: Optional[tuple[int, int]] = None
 
     def get_hex_path_odd_r(self,
         col1: int, row1: int, col2: int, row2: int
@@ -223,6 +225,11 @@ class App:
         self.nextTurnIn: int = data['nextTurnIn'] # Количество секунд до следующего хода
         self.score: int = data['score'] # Текущий счёт команды
         self.spot: dict[Literal['q', 'r'], int] = data['spot'] # Координаты основного гекса муравейника
+        if self.home_cell_1 is None or self.home_cell_2 is None:
+            cell1, cell2 = [cell for cell in self.home if cell != self.spot]
+            self.home_cell_1 = (cell1['q'], cell1['r'])
+            self.home_cell_2 = (cell2['q'], cell2['r'])
+
         if data['turnNo'] != self.turnNo:
             self.turnNo = data['turnNo'] # Номер текущего хода
             self.new_turn()
