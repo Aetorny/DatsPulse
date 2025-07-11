@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # дебаг
 
     s = Squad(0, 0)
-    for i in range(9):
+    for i in range(1):
         s.add(Ant({"id": "bob"}))
     
     s.move_to(2, 3)

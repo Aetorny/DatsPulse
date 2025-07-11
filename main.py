@@ -12,20 +12,40 @@ HEADERS = {
 
 class App:
     def __init__(self) -> None:
-        self.squads: list[dict[str, Ant]] = []
-        self.ants_to_squad: dict[str, int] = {}
+        self.scouts: list[Ant] = []
+        self.soldiers: list[Ant] = []
+        self.workers: list[Ant] = []
         self.turnNo = -1
+
+    def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
+        x1 = q1 - (r1 - (r1 & 1)) // 2
+        z1 = r1
+        y1 = -x1 - z1
+
+        x2 = q2 - (r2 - (r2 & 1)) // 2
+        z2 = r2
+        y2 = -x2 - z2
+
+        distance = max(abs(x1 - x2), abs(y1 - y2), abs(z1 - z2))
+
+        return distance
 
     def add_new_squad(self) -> None: # TODO
         ...
 
     def new_turn(self) -> None:
+        self.scouts: list[Ant] = []
+        self.soldiers: list[Ant] = []
+        self.workers: list[Ant] = []
         for ant in self.ants:
-            id_ = ant['id']
-            if id_ in self.ants_to_squad:
-                self.squads[self.ants_to_squad[id_]][id_] = Ant(ant)
-            else:
-                self.add_new_squad()
+            type_ = ant['type']
+            if type_ == 'scout':
+                self.scouts.append(Ant(ant))
+            elif type_ == 'soldier':
+                self.soldiers.append(Ant(ant))
+            elif type_ == 'worker':
+                self.workers.append(Ant(ant))
+            
 
     def get_arena(self) -> None:
         response = requests.get(URL+'arena', headers=HEADERS)
@@ -62,15 +82,46 @@ class App:
 
     def move_all_ants(self) -> None:
         moves = []
+        path1 = [
+            {
+                "q": self.spot['q']+1,
+                "r": self.spot['r']
+            },
+            {
+                "q": self.spot['q']+2,
+                "r": self.spot['r']
+            },
+            {
+                "q": self.spot['q']+2,
+                "r": self.spot['r']+1
+            },
+            {
+                "q": self.spot['q']+2,
+                "r": self.spot['r']+2
+            }
+        ]
+        path2 = [
+            {
+                "q": self.spot['q']+1,
+                "r": self.spot['r']+2
+            },
+            {
+                "q": self.spot['q'],
+                "r": self.spot['r']+2
+            },
+            {
+                "q": self.spot['q'],
+                "r": self.spot['r']+1
+            },
+            {
+                "q": self.spot['q'],
+                "r": self.spot['r']
+            }
+        ]
         for ant in self.ants:
             moves.append({
                 "ant": ant['id'],
-                "path": [
-                    {
-                        "q": self.spot['q']+1,
-                        "r": self.spot['r']
-                    }
-                ]
+                "path": path1 if ant['q'] != self.spot['q'] else path2
             })
 
         self.post_move(moves)
@@ -80,7 +131,7 @@ class App:
             "moves": moves
         }
 
-        print(requests.post(URL+'move', headers=HEADERS, json=data).json())
+        requests.post(URL+'move', headers=HEADERS, json=data).json()
 
     def register(self) -> None:
         print(requests.post(URL+'register', headers=HEADERS).json())
@@ -88,7 +139,7 @@ class App:
 
 def main() -> None:
     app = App()
-    app.register()
+    # app.register()
     # import time
     # while True:
     #     time.sleep(1)
