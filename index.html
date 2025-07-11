@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Визуализация арены</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            color: #ecf0f1;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: #f1c40f;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .stat-item {
+            background: rgba(44, 62, 80, 0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+            min-width: 150px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #3498db;
+            font-size: 1.4rem;
+        }
+        
+        .content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .map-container {
+            flex: 1;
+            min-width: 700px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .canvas-wrapper {
+            position: relative;
+            background: #0c1e2e;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #3498db;
+        }
+        
+        #arenaCanvas {
+            display: block;
+            width: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(44, 62, 80, 0.7);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .info-panel {
+            flex: 0 0 300px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .panel-title {
+            margin-top: 0;
+            color: #f1c40f;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .ant-list, .enemy-list, .food-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            background: rgba(44, 62, 80, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .entity-item {
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .health-bar {
+            height: 10px;
+            background: #555;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            border-radius: 5px;
+        }
+        
+        button {
+            background: linear-gradient(to right, #3498db, #2c3e50);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            background: linear-gradient(to right, #2980b9, #1c2833);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status {
+            margin-top: 20px;
+            text-align: center;
+            font-style: italic;
+            color: #bdc3c7;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(12, 30, 46, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: #3498db;
+            z-index: 10;
+        }
+        
+        @media (max-width: 1100px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .map-container {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Гексагональная визуализация арены</h1>
+            <div class="stats">
+                <div class="stat-item">
+                    <div>Текущий ход</div>
+                    <div id="turnNo" class="stat-value">0</div>
+                </div>
+                <div class="stat-item">
+                    <div>Счёт команды</div>
+                    <div id="score" class="stat-value">0</div>
+                </div>
+                <div class="stat-item">
+                    <div>Следующий ход через</div>
+                    <div id="nextTurnIn" class="stat-value">0.0</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="content">
+            <div class="map-container">
+                <div class="controls">
+                    <button id="refreshBtn">Обновить данные</button>
+                    <div id="coordinates">Координаты: (0, 0)</div>
+                </div>
+                
+                <div class="canvas-wrapper">
+                    <canvas id="arenaCanvas"></canvas>
+                    <div id="loading" class="loading">Загрузка данных...</div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #8bc34a;"></div>
+                        <div>Земля (тип 0)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #9e9e9e;"></div>
+                        <div>Горы (тип 1)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #03a9f4;"></div>
+                        <div>Вода (тип 2)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #795548;"></div>
+                        <div>Муравейник</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #4caf50;"></div>
+                        <div>Еда</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2196f3;"></div>
+                        <div>Наши муравьи</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f44336;"></div>
+                        <div>Враги</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h2 class="panel-title">Наши муравьи</h2>
+                <div id="antsList" class="ant-list">
+                    <!-- Данные о муравьях будут здесь -->
+                </div>
+                
+                <h2 class="panel-title">Видимые враги</h2>
+                <div id="enemiesList" class="enemy-list">
+                    <!-- Данные о врагах будут здесь -->
+                </div>
+                
+                <h2 class="panel-title">Ресурсы</h2>
+                <div id="foodList" class="food-list">
+                    <!-- Данные о ресурсах будут здесь -->
+                </div>
+                
+                <div class="status">
+                    Статус: <span id="statusText">Ожидание данных...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Конфигурация
+        const HEX_RADIUS = 20;
+        const HEX_WIDTH = HEX_RADIUS * 2;
+        const HEX_HEIGHT = Math.sqrt(3) * HEX_RADIUS;
+        
+        // Элементы DOM
+        const canvas = document.getElementById('arenaCanvas');
+        const ctx = canvas.getContext('2d');
+        const loadingElement = document.getElementById('loading');
+        const turnNoElement = document.getElementById('turnNo');
+        const scoreElement = document.getElementById('score');
+        const nextTurnInElement = document.getElementById('nextTurnIn');
+        const statusTextElement = document.getElementById('statusText');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const coordinatesElement = document.getElementById('coordinates');
+        const antsListElement = document.getElementById('antsList');
+        const enemiesListElement = document.getElementById('enemiesList');
+        const foodListElement = document.getElementById('foodList');
+        
+        // Состояние приложения
+        let arenaData = null;
+        let canvasWidth = 0;
+        let canvasHeight = 0;
+        let offsetX = 0;
+        let offsetY = 0;
+        let scale = 1;
+        let isDragging = false;
+        let lastX, lastY;
+        
+        // Функция для преобразования осевых координат (q, r) в экранные (x, y)
+        function hexToPixel(q, r) {
+            const x = (q * HEX_WIDTH * 0.75) * scale + offsetX;
+            const y = (r * HEX_HEIGHT + q * HEX_HEIGHT * 0.5) * scale + offsetY;
+            return {x, y};
+        }
+        
+        // Функция для рисования гексагона
+        function drawHexagon(centerX, centerY, fillColor, strokeColor = '#000') {
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.PI / 3 * i;
+                const x = centerX + HEX_RADIUS * Math.cos(angle) * scale;
+                const y = centerY + HEX_RADIUS * Math.sin(angle) * scale;
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.closePath();
+            
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        
+        // Функция для рисования объекта (муравей, враг, еда)
+        function drawObject(centerX, centerY, color, radius, label = '') {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * scale, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            if (label) {
+                ctx.fillStyle = '#fff';
+                ctx.font = `${10 * scale}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, centerX, centerY);
+            }
+        }
+        
+        // Функция для обновления визуализации
+        function drawArena() {
+            if (!arenaData) return;
+            
+            // Очищаем canvas
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Рисуем видимые гексы карты
+            arenaData.map.forEach(hex => {
+                const {x, y} = hexToPixel(hex.q, hex.r);
+                let color;
+                
+                switch(hex.type) {
+                    case 0: color = '#8bc34a'; break; // земля
+                    case 1: color = '#9e9e9e'; break; // гора
+                    case 2: color = '#03a9f4'; break; // вода
+                    default: color = '#8bc34a';
+                }
+                
+                drawHexagon(x, y, color);
+                
+                // Отображаем стоимость перемещения
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.font = `${10 * scale}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(hex.cost, x, y);
+            });
+            
+            // Рисуем муравейник
+            arenaData.home.forEach(home => {
+                const {x, y} = hexToPixel(home.q, home.r);
+                drawHexagon(x, y, '#795548');
+            });
+            
+            // Рисуем ресурсы (еду)
+            arenaData.food.forEach(food => {
+                const {x, y} = hexToPixel(food.q, food.r);
+                drawObject(x, y, '#4caf50', HEX_RADIUS * 0.6, food.amount);
+            });
+            
+            // Рисуем врагов
+            arenaData.enemies.forEach(enemy => {
+                const {x, y} = hexToPixel(enemy.q, enemy.r);
+                drawObject(x, y, '#f44336', HEX_RADIUS * 0.5, enemy.health);
+            });
+            
+            // Рисуем наших муравьев
+            arenaData.ants.forEach(ant => {
+                const {x, y} = hexToPixel(ant.q, ant.r);
+                drawObject(x, y, '#2196f3', HEX_RADIUS * 0.7, ant.health);
+                
+                // Показываем направление движения
+                if (ant.move && ant.move.length > 0) {
+                    const target = ant.move[ant.move.length - 1];
+                    const targetPos = hexToPixel(target.q, target.r);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(targetPos.x, targetPos.y);
+                    ctx.strokeStyle = '#2196f3';
+                    ctx.lineWidth = 2 * scale;
+                    ctx.stroke();
+                    
+                    // Стрелка
+                    const angle = Math.atan2(targetPos.y - y, targetPos.x - x);
+                    const arrowSize = 5 * scale;
+                    ctx.beginPath();
+                    ctx.moveTo(targetPos.x, targetPos.y);
+                    ctx.lineTo(
+                        targetPos.x - arrowSize * Math.cos(angle - Math.PI/6),
+                        targetPos.y - arrowSize * Math.sin(angle - Math.PI/6)
+                    );
+                    ctx.lineTo(
+                        targetPos.x - arrowSize * Math.cos(angle + Math.PI/6),
+                        targetPos.y - arrowSize * Math.sin(angle + Math.PI/6)
+                    );
+                    ctx.closePath();
+                    ctx.fillStyle = '#2196f3';
+                    ctx.fill();
+                }
+            });
+            
+            // Обновляем информационные панели
+            updateInfoPanels();
+        }
+        
+        // Обновление информационных панелей
+        function updateInfoPanels() {
+            // Наши муравьи
+            antsListElement.innerHTML = '';
+            arenaData.ants.forEach(ant => {
+                const antElement = document.createElement('div');
+                antElement.className = 'entity-item';
+                antElement.innerHTML = `
+                    <div>
+                        <strong>Муравей ${ant.id.slice(0, 8)}</strong>
+                        <div>Тип: ${ant.type} | Координаты: (${ant.q}, ${ant.r})</div>
+                        <div>Здоровье: ${ant.health}</div>
+                        <div class="health-bar">
+                            <div class="health-fill" style="width: ${ant.health}%; background: ${ant.health > 50 ? '#2ecc71' : ant.health > 25 ? '#f39c12' : '#e74c3c'}"></div>
+                        </div>
+                    </div>
+                `;
+                antsListElement.appendChild(antElement);
+            });
+            
+            // Враги
+            enemiesListElement.innerHTML = '';
+            arenaData.enemies.forEach(enemy => {
+                const enemyElement = document.createElement('div');
+                enemyElement.className = 'entity-item';
+                enemyElement.innerHTML = `
+                    <div>
+                        <strong>Враг типа ${enemy.type}</strong>
+                        <div>Координаты: (${enemy.q}, ${enemy.r})</div>
+                        <div>Здоровье: ${enemy.health} | Атака: ${enemy.attack}</div>
+                    </div>
+                `;
+                enemiesListElement.appendChild(enemyElement);
+            });
+            
+            // Ресурсы
+            foodListElement.innerHTML = '';
+            arenaData.food.forEach(food => {
+                const foodElement = document.createElement('div');
+                foodElement.className = 'entity-item';
+                foodElement.innerHTML = `
+                    <div>
+                        <strong>Ресурс типа ${food.type}</strong>
+                        <div>Координаты: (${food.q}, ${food.r})</div>
+                        <div>Количество: ${food.amount}</div>
+                    </div>
+                `;
+                foodListElement.appendChild(foodElement);
+            });
+        }
+        
+        // Функция для загрузки данных с сервера
+        async function fetchArenaData() {
+            try {
+                loadingElement.style.display = 'flex';
+                statusTextElement.textContent = 'Загрузка данных...';
+                
+                const response = await fetch('https://games-test.datsteam.dev/api/arena', {
+                    headers: {
+                        'X-Auth-Token': 'b12a46bf-db96-4d30-9add-72d1184e05d3'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(`Ошибка сервера: ${response.status}`);
+                }
+                
+                arenaData = await response.json();
+                
+                // Обновляем статистику
+                turnNoElement.textContent = arenaData.turnNo;
+                scoreElement.textContent = arenaData.score;
+                nextTurnInElement.textContent = arenaData.nextTurnIn.toFixed(1);
+                
+                // Рассчитываем границы для центрирования карты
+                calculateMapBounds();
+                
+                // Рисуем арену
+                drawArena();
+                
+                statusTextElement.textContent = 'Данные успешно загружены';
+                setTimeout(() => {
+                    loadingElement.style.display = 'none';
+                }, 500);
+            } catch (error) {
+                console.error('Ошибка при загрузке данных:', error);
+                statusTextElement.textContent = `Ошибка: ${error.message}`;
+                loadingElement.style.display = 'none';
+            }
+        }
+        
+        // Рассчитываем границы карты для центрирования
+        function calculateMapBounds() {
+            if (!arenaData || !arenaData.map.length) return;
+            
+            let minQ = Infinity, maxQ = -Infinity;
+            let minR = Infinity, maxR = -Infinity;
+            
+            // Собираем все координаты из всех объектов
+            const allCoords = [
+                ...arenaData.map.map(h => ({q: h.q, r: h.r})),
+                ...arenaData.ants.map(a => ({q: a.q, r: a.r})),
+                ...arenaData.enemies.map(e => ({q: e.q, r: e.r})),
+                ...arenaData.food.map(f => ({q: f.q, r: f.r})),
+                ...arenaData.home.map(h => ({q: h.q, r: h.r}))
+            ];
+            
+            // Находим границы
+            allCoords.forEach(coord => {
+                minQ = Math.min(minQ, coord.q);
+                maxQ = Math.max(maxQ, coord.q);
+                minR = Math.min(minR, coord.r);
+                maxR = Math.max(maxR, coord.r);
+            });
+            
+            // Рассчитываем размеры в пикселях
+            const widthInHexes = maxQ - minQ + 1;
+            const heightInHexes = maxR - minR + 1;
+            
+            const pixelWidth = widthInHexes * HEX_WIDTH * 0.75 + HEX_RADIUS;
+            const pixelHeight = heightInHexes * HEX_HEIGHT + HEX_HEIGHT * 0.5;
+            
+            // Устанавливаем размеры canvas
+            canvasWidth = Math.max(800, pixelWidth);
+            canvasHeight = Math.max(600, pixelHeight);
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            
+            // Центрируем карту
+            offsetX = (canvasWidth - pixelWidth) / 2 - minQ * HEX_WIDTH * 0.75;
+            offsetY = (canvasHeight - pixelHeight) / 2 - minR * HEX_HEIGHT;
+            scale = 1;
+        }
+        
+        // Обработчики событий для масштабирования и перемещения
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const zoomIntensity = 0.1;
+            const mouseX = e.clientX - canvas.getBoundingClientRect().left;
+            const mouseY = e.clientY - canvas.getBoundingClientRect().top;
+            
+            const wheel = e.deltaY < 0 ? 1 : -1;
+            const zoom = Math.exp(wheel * zoomIntensity);
+            
+            // Вычисляем смещение для сохранения позиции курсора
+            offsetX -= (mouseX - offsetX) * (zoom - 1);
+            offsetY -= (mouseY - offsetY) * (zoom - 1);
+            
+            // Применяем масштаб
+            scale *= zoom;
+            
+            // Ограничиваем масштаб
+            scale = Math.max(0.5, Math.min(scale, 3));
+            
+            drawArena();
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            canvas.style.cursor = 'grabbing';
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const mouseX = e.clientX - canvas.getBoundingClientRect().left;
+            const mouseY = e.clientY - canvas.getBoundingClientRect().top;
+            
+            // Обновляем отображение координат
+            coordinatesElement.textContent = `Координаты: (${Math.round(mouseX)}, ${Math.round(mouseY)})`;
+            
+            if (isDragging) {
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                
+                offsetX += dx;
+                offsetY += dy;
+                
+                lastX = e.clientX;
+                lastY = e.clientY;
+                
+                drawArena();
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+            canvas.style.cursor = 'default';
+        });
+        
+        // Инициализация
+        refreshBtn.addEventListener('click', fetchArenaData);
+        fetchArenaData();
+    </script>
+</body>
+</html>
