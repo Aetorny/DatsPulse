@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Визуализация арены</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="stats">
+                <div>Счёт команды</div>
+                <div id="score" class="stat-value">0</div>
+            </div>
+        </header>
+        
+        <div class="content">
+            <div class="map-container">
+                <div class="controls">
+                    <div id="coordinates">Координаты: (0, 0)</div>
+                </div>
+                
+                <div class="canvas-wrapper">
+                    <canvas id="arenaCanvas"></canvas>
+                    <div id="loading" class="loading">Загрузка данных...</div>
+                </div>
+                
+                <div class="legend">
+                    <!-- Легенда для типов гексов -->
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2ecc40;"></div>
+                        <div>Муравейник</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #fff; border: 1px solid #ccc;"></div>
+                        <div>Пустой</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #8B5C2A;"></div>
+                        <div>Грязь</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffe600;"></div>
+                        <div>Кислота</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #bdbdbd;"></div>
+                        <div>Камни</div>
+                    </div>
+                    
+                    <!-- Легенда для типов муравьев (без цвета, только картинка) -->
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: none;"></div>
+                        <div>Рабочий</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: none;"></div>
+                        <div>Боец</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: none;"></div>
+                        <div>Разведчик</div>
+                    </div>
+                    
+                    <!-- Легенда для типов ресурсов -->
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2ecc40;"></div>
+                        <div>Яблоко</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #f5e6c8; border: 1px solid #ccc;"></div>
+                        <div>Хлеб</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffb07c;"></div>
+                        <div>Нектар</div>
+                    </div>
+                    
+                    <!-- Легенда для врагов (без цвета, только картинка) -->
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: none;"></div>
+                        <div>Враги</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h2 class="panel-title">Наши муравьи</h2>
+                <div id="antsList" class="ant-list">
+                    <!-- Данные о муравьях будут здесь -->
+                </div>
+                
+                <h2 class="panel-title">Видимые враги</h2>
+                <div id="enemiesList" class="enemy-list">
+                    <!-- Данные о врагах будут здесь -->
+                </div>
+                
+                <h2 class="panel-title">Ресурсы</h2>
+                <div id="foodList" class="food-list">
+                    <!-- Данные о ресурсах будут здесь -->
+                </div>
+                
+                <div class="status">
+                    Статус: <span id="statusText">Ожидание данных...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
