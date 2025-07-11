@@ -246,32 +246,59 @@
                 </div>
                 
                 <div class="legend">
+                    <!-- Легенда для типов гексов -->
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #795548;"></div>
+                        <div>Муравейник (тип 1)</div>
+                    </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: #8bc34a;"></div>
-                        <div>Земля (тип 0)</div>
+                        <div>Пустой (тип 2)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #5d4037;"></div>
+                        <div>Грязь (тип 3)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #00bcd4;"></div>
+                        <div>Кислота (тип 4)</div>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: #9e9e9e;"></div>
-                        <div>Горы (тип 1)</div>
+                        <div>Камни (тип 5)</div>
                     </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #03a9f4;"></div>
-                        <div>Вода (тип 2)</div>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #795548;"></div>
-                        <div>Муравейник</div>
-                    </div>
+                    
+                    <!-- Легенда для типов муравьев -->
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: #4caf50;"></div>
-                        <div>Еда</div>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #2196f3;"></div>
-                        <div>Наши муравьи</div>
+                        <div>Рабочий (тип 0)</div>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: #f44336;"></div>
+                        <div>Боец (тип 1)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2196f3;"></div>
+                        <div>Разведчик (тип 2)</div>
+                    </div>
+                    
+                    <!-- Легенда для типов ресурсов -->
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ff9800;"></div>
+                        <div>Яблоко (тип 1)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #cddc39;"></div>
+                        <div>Хлеб (тип 2)</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffeb3b;"></div>
+                        <div>Нектар (тип 3)</div>
+                    </div>
+                    
+                    <!-- Легенда для врагов -->
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e91e63;"></div>
                         <div>Враги</div>
                     </div>
                 </div>
@@ -305,6 +332,52 @@
         const HEX_RADIUS = 20;
         const HEX_WIDTH = HEX_RADIUS * 2;
         const HEX_HEIGHT = Math.sqrt(3) * HEX_RADIUS;
+        
+        // Цвета для типов гексов
+        const HEX_COLORS = {
+            1: '#795548', // муравейник
+            2: '#8bc34a', // пустой
+            3: '#5d4037', // грязь
+            4: '#00bcd4', // кислота
+            5: '#9e9e9e'  // камни
+        };
+        
+        // Цвета для типов муравьев
+        const ANT_COLORS = {
+            0: '#4caf50', // рабочий
+            1: '#f44336', // боец
+            2: '#2196f3'  // разведчик
+        };
+        
+        // Цвета для типов ресурсов
+        const FOOD_COLORS = {
+            1: '#ff9800', // яблоко
+            2: '#cddc39', // хлеб
+            3: '#ffeb3b'  // нектар
+        };
+        
+        // Названия типов муравьев
+        const ANT_TYPES = {
+            0: 'Рабочий',
+            1: 'Боец',
+            2: 'Разведчик'
+        };
+        
+        // Названия типов ресурсов
+        const FOOD_TYPES = {
+            1: 'Яблоко',
+            2: 'Хлеб',
+            3: 'Нектар'
+        };
+        
+        // Названия типов гексов
+        const HEX_TYPES = {
+            1: 'Муравейник',
+            2: 'Пустой',
+            3: 'Грязь',
+            4: 'Кислота',
+            5: 'Камни'
+        };
         
         // Элементы DOM
         const canvas = document.getElementById('arenaCanvas');
@@ -389,14 +462,7 @@
             // Рисуем видимые гексы карты
             arenaData.map.forEach(hex => {
                 const {x, y} = hexToPixel(hex.q, hex.r);
-                let color;
-                
-                switch(hex.type) {
-                    case 0: color = '#8bc34a'; break; // земля
-                    case 1: color = '#9e9e9e'; break; // гора
-                    case 2: color = '#03a9f4'; break; // вода
-                    default: color = '#8bc34a';
-                }
+                const color = HEX_COLORS[hex.type] || '#8bc34a';
                 
                 drawHexagon(x, y, color);
                 
@@ -411,25 +477,27 @@
             // Рисуем муравейник
             arenaData.home.forEach(home => {
                 const {x, y} = hexToPixel(home.q, home.r);
-                drawHexagon(x, y, '#795548');
+                drawHexagon(x, y, HEX_COLORS[1]);
             });
             
             // Рисуем ресурсы (еду)
             arenaData.food.forEach(food => {
                 const {x, y} = hexToPixel(food.q, food.r);
-                drawObject(x, y, '#4caf50', HEX_RADIUS * 0.6, food.amount);
+                const color = FOOD_COLORS[food.type] || '#4caf50';
+                drawObject(x, y, color, HEX_RADIUS * 0.6, food.amount);
             });
             
             // Рисуем врагов
             arenaData.enemies.forEach(enemy => {
                 const {x, y} = hexToPixel(enemy.q, enemy.r);
-                drawObject(x, y, '#f44336', HEX_RADIUS * 0.5, enemy.health);
+                drawObject(x, y, '#e91e63', HEX_RADIUS * 0.5, enemy.health);
             });
             
             // Рисуем наших муравьев
             arenaData.ants.forEach(ant => {
                 const {x, y} = hexToPixel(ant.q, ant.r);
-                drawObject(x, y, '#2196f3', HEX_RADIUS * 0.7, ant.health);
+                const color = ANT_COLORS[ant.type] || '#2196f3';
+                drawObject(x, y, color, HEX_RADIUS * 0.7, ant.health);
                 
                 // Показываем направление движения
                 if (ant.move && ant.move.length > 0) {
@@ -439,7 +507,7 @@
                     ctx.beginPath();
                     ctx.moveTo(x, y);
                     ctx.lineTo(targetPos.x, targetPos.y);
-                    ctx.strokeStyle = '#2196f3';
+                    ctx.strokeStyle = color;
                     ctx.lineWidth = 2 * scale;
                     ctx.stroke();
                     
@@ -457,7 +525,7 @@
                         targetPos.y - arrowSize * Math.sin(angle + Math.PI/6)
                     );
                     ctx.closePath();
-                    ctx.fillStyle = '#2196f3';
+                    ctx.fillStyle = color;
                     ctx.fill();
                 }
             });
@@ -475,7 +543,7 @@
                 antElement.className = 'entity-item';
                 antElement.innerHTML = `
                     <div>
-                        <strong>Муравей ${ant.id.slice(0, 8)}</strong>
+                        <strong>${ANT_TYPES[ant.type] || 'Муравей'} ${ant.id.slice(0, 8)}</strong>
                         <div>Тип: ${ant.type} | Координаты: (${ant.q}, ${ant.r})</div>
                         <div>Здоровье: ${ant.health}</div>
                         <div class="health-bar">
@@ -508,7 +576,7 @@
                 foodElement.className = 'entity-item';
                 foodElement.innerHTML = `
                     <div>
-                        <strong>Ресурс типа ${food.type}</strong>
+                        <strong>${FOOD_TYPES[food.type] || 'Ресурс'} (тип ${food.type})</strong>
                         <div>Координаты: (${food.q}, ${food.r})</div>
                         <div>Количество: ${food.amount}</div>
                     </div>
