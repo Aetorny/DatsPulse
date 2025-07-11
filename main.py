@@ -11,6 +11,24 @@ HEADERS = {
     "X-Auth-Token": "b12a46bf-db96-4d30-9add-72d1184e05d3"
 }
 
+def cube_to_oddr(x: int, y: int, z: int) -> tuple[int, int]:
+    row = z
+    col = x + (z - (z & 1)) // 2
+    return (col, row)
+
+def oddr_to_cube(col: int, row: int) -> tuple[int, int, int]:
+     x = col - (row - (row & 1)) // 2
+     z = row
+     y = -x - z
+     return (x, y, z)
+
+def neighbors(q: int, r: int):
+    coords = oddr_to_cube(q, r)
+    output = []
+    for offset in [(1, 0, -1), (1, -1, 0), (0, -1, 1), (-1, 0, 1), (-1, 1, 0), (0, 1, -1)]:
+        output.append(cube_to_oddr(
+            coords[0]+offset[0], coords[1]+offset[1], coords[2]+offset[2],))
+    return output
 
 class App:
     def __init__(self) -> None:
@@ -25,16 +43,6 @@ class App:
     def get_hex_path_odd_r(self,
         col1: int, row1: int, col2: int, row2: int
     ) -> list[tuple[int, int]]:
-        def oddr_to_cube(col: int, row: int) -> tuple[int, int, int]:
-            x = col - (row - (row & 1)) // 2
-            z = row
-            y = -x - z
-            return (x, y, z)
-
-        def cube_to_oddr(x: int, y: int, z: int) -> tuple[int, int]:
-            row = z
-            col = x + (z - (z & 1)) // 2
-            return (col, row)
 
         def cube_lerp(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[float, float, float]:
             return (
@@ -69,7 +77,7 @@ class App:
             col, row = cube_to_oddr(*rounded)
             path.append((col, row))
 
-        return path
+        return self.filter_path(path)
 
 
     def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
@@ -212,6 +220,8 @@ class App:
 
         # Видимые гексы карты
         self.map: list[dict[str, Any]] = data['map']
+        self.prep_map: dict[tuple[int, int], dict] = {}
+        self.prepare_map()
 
 
         self.nextTurnIn: int = data['nextTurnIn'] # Количество секунд до следующего хода
@@ -224,6 +234,32 @@ class App:
         self.post_move(self.moves) # type: ignore
 
         time.sleep(self.nextTurnIn)
+    def prepare_map(self):
+        for tile in self.map:
+            self.prep_map[(tile["q"], tile["r"])] = tile
+
+    def bad_tile(self, i : tuple[int, int]) -> bool:
+        return self.prep_map[i]["type"] == 5
+
+    def filter_path(self, path: list[tuple[int, int]]) -> list[tuple[int, int]]:
+        output = path.copy()
+        for i in range(1, len(output) - 1):
+            if self.bad_tile(output[i]):
+                n = neighbors(output[i][0], output[i][1]) 
+                a, b = n.index(output[i-1]), n.index(output[i+1])
+
+                if a > b:
+                    a, b = b, a
+                    n = n[::-1]
+
+                path1 = n[a+1:b]
+                path2 = n[a+1:-1] + n[:b:-1]
+
+                path = path1 if len(path1) < len(path2) else path2
+
+                output = output[:i] + path + output[i+1:]
+
+        return output[1:]
 
     def post_move(self, moves: list[dict[str, Any]]) -> None:
         data = {
