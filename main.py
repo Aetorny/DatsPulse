@@ -78,7 +78,6 @@ class App:
 
         return self.filter_path(path)
 
-
     def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
         assert isinstance(q1, int) and isinstance(r1, int) and isinstance(q2, int) and isinstance(r2, int), 'q and r must be int'
         x1 = q1 - (r1 - (r1 & 1)) // 2
@@ -181,7 +180,6 @@ class App:
         if len(self.soldiers)-1 < len(self.cells_around_base):
             self.move_soldiers_to_guard()
 
-
     def get_arena(self) -> None:
         self.moves = []
         response = requests.get(URL+'arena', headers=HEADERS)
@@ -231,8 +229,6 @@ class App:
 
         self.post_move(self.moves)
 
-        time.sleep(self.nextTurnIn)
-
     def prepare_map(self) -> None:
         for tile in self.map:
             self.prep_map[(tile["q"], tile["r"])] = tile
@@ -265,7 +261,12 @@ class App:
             "moves": moves
         }
 
-        requests.post(URL+'move', headers=HEADERS, json=data).json()
+        data = requests.post(URL+'move', headers=HEADERS, json=data).json()
+
+        self.nextTurnIn: int = data['nextTurnIn']
+
+        time.sleep(self.nextTurnIn)
+
 
     def register(self) -> None:
         print(requests.post(URL+'register', headers=HEADERS).json())
