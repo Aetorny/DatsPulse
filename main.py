@@ -203,6 +203,9 @@ class App:
         # Видимые враги
         self.enemies: list[dict[str, Any]] = data['enemies']
 
+        # Позиции врагов и наших живчиков (разведчиков и работников)
+        self.units_poses : set[tuple[int, int]] = set()
+
         # Видимые ресурсы
         self.food: list[dict[str, Any]] = data['food']
 
@@ -240,8 +243,21 @@ class App:
         for tile in self.map:
             self.prep_map[(tile["q"], tile["r"])] = tile
 
+        for ant in self.ants:
+            self.units_poses.add((ant["q"], ant["r"]))
+
+        for enemy in self.enemies:
+            self.units_poses.add((enemy["q"], enemy["r"]))
+
     def bad_tile(self, i : tuple[int, int]) -> bool:
-        return self.prep_map[i]["type"] == 5
+        return self.prep_map[i]["type"] == 5 or \
+               i in self.units_poses
+
+    def pathcost(self, path: list[tuple[int, int]]) -> int:
+        i = 0
+        for tile in path:
+            i += self.prep_map[tile]["cost"]
+        return i
 
     def filter_path(self, path: list[tuple[int, int]]) -> list[tuple[int, int]]:
         output = path.copy()
@@ -257,7 +273,7 @@ class App:
                 path1 = n[a+1:b]
                 path2 = n[a+1:-1] + n[:b:-1]
 
-                path = path1 if len(path1) < len(path2) else path2
+                path = path1 if self.pathcost(path1) < self.pathcost(path2) else path2
 
                 output = output[:i] + path + output[i+1:]
 
