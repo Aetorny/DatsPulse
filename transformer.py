@@ -6,7 +6,7 @@ from models.food_type import FoodType
 from models.ants.ant import Ant
 from models.ants.ant_type import AntType
 from models.ants.worker import WorkerAnt
-from models.ants.fighter import FighterAnt
+from models.ants.soldier import SoldierAnt
 from models.ants.scout import ScoutAnt
 from models.vector2 import Vector2
 
@@ -38,7 +38,7 @@ class DataTransformer:
             if ant['type'] == AntType.WORKER.value:
                 ants.append(WorkerAnt.from_dict(ant))
             elif ant['type'] == AntType.FIGHTER.value:
-                ants.append(FighterAnt.from_dict(ant))
+                ants.append(SoldierAnt.from_dict(ant))
             elif ant['type'] == AntType.SCOUT.value:
                 ants.append(ScoutAnt.from_dict(ant))
         return ants
@@ -50,7 +50,7 @@ class DataTransformer:
             if ant['type'] == AntType.WORKER.value:
                 ants.append(WorkerAnt.from_dict(ant | {'id': ''}))
             elif ant['type'] == AntType.FIGHTER.value:
-                ants.append(FighterAnt.from_dict(ant | {'id': ''}))
+                ants.append(SoldierAnt.from_dict(ant | {'id': ''}))
             elif ant['type'] == AntType.SCOUT.value:
                 ants.append(ScoutAnt.from_dict(ant | {'id': ''}))
         return ants
