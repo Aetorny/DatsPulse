@@ -67,13 +67,11 @@ class App:
                 "ant": ant['id'],
                 "path": [
                     {
-                        "q": ant['q']-1,
-                        "r": ant['r']
+                        "q": self.spot['q']+1,
+                        "r": self.spot['r']
                     }
                 ]
             })
-            if ant['food']['amount'] > 0:
-                moves[-1]['path'][-1]['q'] += 2
 
         self.post_move(moves)
 
@@ -82,7 +80,7 @@ class App:
             "moves": moves
         }
 
-        _response = requests.post(URL+'move', headers=HEADERS, json=data)
+        print(requests.post(URL+'move', headers=HEADERS, json=data).json())
 
     def register(self) -> None:
         print(requests.post(URL+'register', headers=HEADERS).json())
