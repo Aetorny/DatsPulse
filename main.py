@@ -1,6 +1,8 @@
 from typing import Any, Literal
 import requests
 
+from ant import Ant
+
 URL = 'https://games-test.datsteam.dev/api/'
 HEADERS = {
     "accept": "application/json",
@@ -10,15 +12,31 @@ HEADERS = {
 
 class App:
     def __init__(self) -> None:
-        pass
+        self.scouts: dict[str, Ant] = {}
+        self.soldiers: dict[str, Ant] = {}
+        self.builders: dict[str, Ant] = {}
+        self.turnNo = -1
+
+    def new_turn(self) -> None:
+        ...
+        # for ant in self.ants:
+        #     if ant['type'] == 2:
+        #         self.scouts.append(Ant(ant))
+        #     elif ant['type'] == 1:
+        #         self.soldiers.append(Ant(ant))
+        #     elif ant['type'] == 0:
+        #         self.builders.append(Ant(ant))
 
     def get_arena(self) -> None:
         response = requests.get(URL+'arena', headers=HEADERS)
 
-        data = response.json()
-        if data['error']:
+        data: dict[str, Any] = response.json()
+        if data.get('error', None):
             return print(data)
-
+        import json
+        with open('test.json', 'w') as f:
+            json.dump(data, f, indent=4)
+        print(data)
         # Список ваших юнитов
         self.ants: list[dict[str, Any]] = data['ants']
 
@@ -37,7 +55,9 @@ class App:
         self.nextTurnIn: int = data['nextTurnIn'] # Количество секунд до следующего хода
         self.score: int = data['score'] # Текущий счёт команды
         self.spot: dict[Literal['q', 'r'], int] = data['spot'] # Координаты основного гекса муравейника
-        self.turnNo = data['turnNo'] # Номер текущего хода
+        if data['turnNo'] != self.turnNo:
+            self.turnNo = data['turnNo'] # Номер текущего хода
+            self.new_turn()
 
     def post_move(self, moves: list[dict[str, Any]]) -> None:
         data = {
@@ -49,6 +69,7 @@ class App:
 
 def main() -> None:
     app = App()
+    app.get_arena()
 
 
 if __name__ == '__main__':
