@@ -62,7 +62,7 @@ class App:
             col, row = cube_to_oddr(*rounded)
             path.append((col, row))
 
-        return path
+        return path[1:]
 
 
     def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
@@ -80,9 +80,26 @@ class App:
         return distance
 
     def go_to_food(self) -> None:
+        moves = []
         for worker in self.workers:
-            closest_food = min(self.food, key=lambda f: self.get_distance(worker.q, worker.r, f['q'], f['r']))
-            print(worker.id, closest_food, self.get_distance(worker.q, worker.r, closest_food['q'], closest_food['r']))
+            if worker.food['amount'] == 0:
+                closest_food = min(self.food, key=lambda f: self.get_distance(worker.q, worker.r, f['q'], f['r']))
+                path = self.get_hex_path_odd_r(worker.q, worker.r, closest_food['q'], closest_food['r'])
+            else:
+                path = self.get_hex_path_odd_r(worker.q, worker.r, self.home[-1]['q'], self.home[-1]['r'])
+            if len(path) > 4:
+                path = path[:4]
+            moves.append({
+                'ant': worker.id,
+                'path': [
+                    {
+                        'q': path[i][0],
+                        'r': path[i][1]
+                    } for i in range(len(path))
+                ]
+            })
+
+        self.post_move(moves)
 
     def new_turn(self) -> None:
         self.scouts: list[Ant] = []
@@ -90,13 +107,13 @@ class App:
         self.workers: list[Ant] = []
         for ant in self.ants:
             type_ = ant['type']
-            if type_ == 'scout':
+            if type_ == 2:
                 self.scouts.append(Ant(ant))
-            elif type_ == 'soldier':
+            elif type_ == 1:
                 self.soldiers.append(Ant(ant))
-            elif type_ == 'worker':
+            elif type_ == 0:
                 self.workers.append(Ant(ant))
-        
+
         self.go_to_food()
 
     def get_arena(self) -> None:
@@ -147,10 +164,10 @@ def main() -> None:
     app = App()
     # print(app.get_hex_path_odd_r(3, 6, 4, 5))
     app.register()
-    # import time
-    # while True:
-    #     time.sleep(1)
-    #     app.get_arena()
+    import time
+    while True:
+        time.sleep(1)
+        app.get_arena()
     #     app.move_all_ants()
 
 
