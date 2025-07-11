@@ -17,7 +17,56 @@ class App:
         self.workers: list[Ant] = []
         self.turnNo = -1
 
+    def get_hex_path_odd_r(self,
+        col1: int, row1: int, col2: int, row2: int
+    ) -> list[tuple[int, int]]:
+        def oddr_to_cube(col: int, row: int) -> tuple[int, int, int]:
+            x = col - (row - (row & 1)) // 2
+            z = row
+            y = -x - z
+            return (x, y, z)
+
+        def cube_to_oddr(x: int, y: int, z: int) -> tuple[int, int]:
+            row = z
+            col = x + (z - (z & 1)) // 2
+            return (col, row)
+
+        def cube_lerp(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[float, float, float]:
+            return (
+                a[0] + (b[0] - a[0]) * t,
+                a[1] + (b[1] - a[1]) * t,
+                a[2] + (b[2] - a[2]) * t,
+            )
+
+        def cube_round(x: float, y: float, z: float) -> tuple[int, int, int]:
+            rx, ry, rz = round(x), round(y), round(z)
+            dx, dy, dz = abs(rx - x), abs(ry - y), abs(rz - z)
+
+            if dx > dy and dx > dz:
+                rx = -ry - rz
+            elif dy > dz:
+                ry = -rx - rz
+            else:
+                rz = -rx - ry
+            return (rx, ry, rz)
+
+        a = oddr_to_cube(col1, row1)
+        b = oddr_to_cube(col2, row2)
+        N = max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
+
+        path = []
+        for i in range(N + 1):
+            t = i / N
+            interpolated = cube_lerp(a, b, t)
+            rounded = cube_round(*interpolated)
+            col, row = cube_to_oddr(*rounded)
+            path.append((col, row))
+
+        return path
+
+
     def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
+        assert isinstance(q1, int) and isinstance(r1, int) and isinstance(q2, int) and isinstance(r2, int), 'q and r must be int'
         x1 = q1 - (r1 - (r1 & 1)) // 2
         z1 = r1
         y1 = -x1 - z1
@@ -30,8 +79,10 @@ class App:
 
         return distance
 
-    def add_new_squad(self) -> None: # TODO
-        ...
+    def go_to_food(self) -> None:
+        for worker in self.workers:
+            closest_food = min(self.food, key=lambda f: self.get_distance(worker.q, worker.r, f['q'], f['r']))
+            print(worker.id, closest_food, self.get_distance(worker.q, worker.r, closest_food['q'], closest_food['r']))
 
     def new_turn(self) -> None:
         self.scouts: list[Ant] = []
@@ -45,7 +96,8 @@ class App:
                 self.soldiers.append(Ant(ant))
             elif type_ == 'worker':
                 self.workers.append(Ant(ant))
-            
+        
+        self.go_to_food()
 
     def get_arena(self) -> None:
         response = requests.get(URL+'arena', headers=HEADERS)
@@ -80,52 +132,6 @@ class App:
             self.turnNo = data['turnNo'] # Номер текущего хода
             self.new_turn()
 
-    def move_all_ants(self) -> None:
-        moves = []
-        path1 = [
-            {
-                "q": self.spot['q']+1,
-                "r": self.spot['r']
-            },
-            {
-                "q": self.spot['q']+2,
-                "r": self.spot['r']
-            },
-            {
-                "q": self.spot['q']+2,
-                "r": self.spot['r']+1
-            },
-            {
-                "q": self.spot['q']+2,
-                "r": self.spot['r']+2
-            }
-        ]
-        path2 = [
-            {
-                "q": self.spot['q']+1,
-                "r": self.spot['r']+2
-            },
-            {
-                "q": self.spot['q'],
-                "r": self.spot['r']+2
-            },
-            {
-                "q": self.spot['q'],
-                "r": self.spot['r']+1
-            },
-            {
-                "q": self.spot['q'],
-                "r": self.spot['r']
-            }
-        ]
-        for ant in self.ants:
-            moves.append({
-                "ant": ant['id'],
-                "path": path1 if ant['q'] != self.spot['q'] else path2
-            })
-
-        self.post_move(moves)
-
     def post_move(self, moves: list[dict[str, Any]]) -> None:
         data = {
             "moves": moves
@@ -139,7 +145,8 @@ class App:
 
 def main() -> None:
     app = App()
-    # app.register()
+    # print(app.get_hex_path_odd_r(3, 6, 4, 5))
+    app.register()
     # import time
     # while True:
     #     time.sleep(1)
