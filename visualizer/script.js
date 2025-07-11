@@ -5,11 +5,11 @@ const HEX_HEIGHT = Math.sqrt(3) * HEX_RADIUS;
 
 // Цвета для типов гексов
 const HEX_COLORS = {
-    1: '#2ecc40', // муравейник - зеленый
+    1: '#8e44ad', // муравейник - фиолетовый
     2: '#fff',    // пустой - белый
     3: '#8B5C2A', // грязь - коричневый
     4: '#ffe600', // кислота - желтый
-    5: '#bdbdbd'  // камни - серый
+    5: '#bdbdbd'  // камни - светло серый
 };
 
 // Названия типов муравьев
@@ -17,6 +17,12 @@ const ANT_TYPES = {
     0: 'Рабочий',
     1: 'Боец',
     2: 'Разведчик'
+};
+
+const ANT_COLORS = {
+    0: '#ffe600', // рабочий - желтый
+    1: '#e74c3c', // боец - красный
+    2: '#2ecc40'  // разведчик - зеленый
 };
 
 // Названия типов ресурсов
@@ -27,9 +33,9 @@ const FOOD_TYPES = {
 };
 
 const FOOD_COLORS = {
-    1: '#2ecc40',   // яблоко - зеленый
-    2: '#f5e6c8',   // хлеб - бежевый
-    3: '#ffb07c'    // нектар - персиковый
+    1: '#3498db', // яблоко - синий
+    2: '#3498db', // хлеб - синий
+    3: '#3498db'  // нектар - синий
 }
 
 // Названия типов гексов
@@ -70,7 +76,11 @@ const images = {
     worker: null,
     enemyScout: null,
     enemySoldier: null,
-    enemyWorker: null
+    enemyWorker: null,
+    house: null,
+    apple: null,
+    bread: null,
+    nectar: null
 };
 
 // Загрузка изображений
@@ -79,39 +89,45 @@ function loadImages() {
         const imageUrls = [
             { key: 'scout', url: 'img/scout.png' },
             { key: 'soldier', url: 'img/soldier.png' },
-            { key: 'worker', url: 'img/worker.png' }
+            { key: 'worker', url: 'img/worker.png' },
+            { key: 'house', url: 'img/house.png' },
+            { key: 'apple', url: 'img/apple.png' },
+            { key: 'bread', url: 'img/bread.png' },
+            { key: 'nectar', url: 'img/nectar.png' }
         ];
-        
+
         let loadedCount = 0;
-        
+
         imageUrls.forEach(item => {
             const img = new Image();
             img.onload = () => {
                 images[item.key] = img;
-                
-                // Создаем чб версии для врагов
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-                
-                for (let i = 0; i < data.length; i += 4) {
-                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                    data[i] = avg;     // red
-                    data[i + 1] = avg; // green
-                    data[i + 2] = avg; // blue
+
+                // Для scout/soldier/worker создаём чб версии для врагов
+                if (item.key === 'scout' || item.key === 'soldier' || item.key === 'worker') {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                        data[i] = avg;     // red
+                        data[i + 1] = avg; // green
+                        data[i + 2] = avg; // blue
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+
+                    const enemyImg = new Image();
+                    enemyImg.src = canvas.toDataURL();
+                    images[`enemy${item.key.charAt(0).toUpperCase() + item.key.slice(1)}`] = enemyImg;
                 }
-                
-                ctx.putImageData(imageData, 0, 0);
-                
-                const enemyImg = new Image();
-                enemyImg.src = canvas.toDataURL();
-                images[`enemy${item.key.charAt(0).toUpperCase() + item.key.slice(1)}`] = enemyImg;
-                
+
                 loadedCount++;
                 if (loadedCount === imageUrls.length) {
                     resolve();
@@ -164,31 +180,19 @@ function drawHexagon(centerX, centerY, fillColor, strokeColor = '#000') {
 function drawAntImage(centerX, centerY, type, isEnemy = false) {
     let img;
     const size = HEX_RADIUS * 1.5 * scale;
-    
+
     switch(type) {
-        case 0: // рабочий
-            img = isEnemy ? images.enemyWorker : images.worker;
-            break;
-        case 1: // боец
-            img = isEnemy ? images.enemySoldier : images.soldier;
-            break;
-        case 2: // разведчик
-            img = isEnemy ? images.enemyScout : images.scout;
-            break;
-        default:
-            img = isEnemy ? images.enemyWorker : images.worker;
+        case 0: img = isEnemy ? images.enemyWorker : images.worker; break;
+        case 1: img = isEnemy ? images.enemySoldier : images.soldier; break;
+        case 2: img = isEnemy ? images.enemyScout : images.scout; break;
+        default: img = isEnemy ? images.enemyWorker : images.worker;
     }
-    
+
     if (img) {
-        ctx.drawImage(img, 
-            centerX - size/2, 
-            centerY - size/2, 
-            size, 
-            size
-        );
+        ctx.drawImage(img, centerX - size/2, centerY - size/2, size, size);
     } else {
-        // Если изображение не загружено, рисуем круг
-        drawObject(centerX, centerY, isEnemy ? '#e91e63' : '#2196f3', HEX_RADIUS * 0.7, type);
+        // Если изображение не загружено, fallback цвет
+        drawObject(centerX, centerY, isEnemy ? ENEMY_COLOR : ANT_COLORS[type] || '#2196f3', HEX_RADIUS * 0.7, type);
     }
     
     // Отображаем здоровье
@@ -209,10 +213,13 @@ function drawObject(centerX, centerY, color, radius, label = '') {
     ctx.stroke();
     
     if (label) {
-        ctx.fillStyle = '#fff';
         ctx.font = `${10 * scale}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#fff';
+        ctx.strokeText(label, centerX, centerY);
         ctx.fillText(label, centerX, centerY);
     }
 }
@@ -220,36 +227,58 @@ function drawObject(centerX, centerY, color, radius, label = '') {
 // Функция для обновления визуализации
 function drawArena() {
     if (!arenaData) return;
-    
-    // Очищаем canvas
+
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    
-    // Рисуем видимые гексы карты
+
+    // Рисуем все гексы карты
     arenaData.map.forEach(hex => {
         const {x, y} = hexToPixel(hex.q, hex.r);
-        const color = HEX_COLORS[hex.type] || '#8bc34a';
-        
+        const isHome = arenaData.home.some(home => home.q === hex.q && home.r === hex.r);
+        const color = isHome ? HEX_COLORS[1] : HEX_COLORS[hex.type] || '#8bc34a';
         drawHexagon(x, y, color);
-        
-        // Отображаем стоимость перемещения
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+
         ctx.font = `${10 * scale}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#fff';
+        ctx.strokeText(hex.cost, x, y);
         ctx.fillText(hex.cost, x, y);
     });
-    
-    // Рисуем муравейник
+
+    // Рисуем муравейник картинкой
     arenaData.home.forEach(home => {
         const {x, y} = hexToPixel(home.q, home.r);
-        drawHexagon(x, y, HEX_COLORS[1]);
+        if (images.house) {
+            const size = HEX_RADIUS * 2.2 * scale;
+            ctx.drawImage(images.house, x - size/2, y - size/2, size, size);
+        }
     });
-    
-    // Рисуем ресурсы (еду)
+
+    // Рисуем ресурсы (еду) картинками
     arenaData.food.forEach(food => {
         const {x, y} = hexToPixel(food.q, food.r);
-        const color = FOOD_COLORS[food.type] || '#4caf50';
-        drawObject(x, y, color, HEX_RADIUS * 0.6, food.amount);
+        let img = null;
+        if (food.type === 1) img = images.apple;
+        if (food.type === 2) img = images.bread;
+        if (food.type === 3) img = images.nectar;
+        if (img) {
+            const size = HEX_RADIUS * 1.5 * scale;
+            ctx.drawImage(img, x - size/2, y - size/2, size, size);
+            // Количество поверх картинки
+            ctx.font = `${10 * scale}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000';
+            ctx.fillStyle = '#fff';
+            ctx.strokeText(food.amount, x, y);
+            ctx.fillText(food.amount, x, y);
+        } else {
+            const color = FOOD_COLORS[food.type] || '#4caf50';
+            drawObject(x, y, color, HEX_RADIUS * 0.6, food.amount);
+        }
     });
     
     // Рисуем врагов
@@ -271,7 +300,7 @@ function drawArena() {
             ctx.beginPath();
             ctx.moveTo(x, y);
             ctx.lineTo(targetPos.x, targetPos.y);
-            ctx.strokeStyle = ANT_COLORS[ant.type] || '#2196f3';
+            ctx.strokeStyle = ANT_COLORS[ant.type] || '#ffe600';
             ctx.lineWidth = 2 * scale;
             ctx.stroke();
             
@@ -289,7 +318,7 @@ function drawArena() {
                 targetPos.y - arrowSize * Math.sin(angle + Math.PI/6)
             );
             ctx.closePath();
-            ctx.fillStyle = ANT_COLORS[ant.type] || '#2196f3';
+            ctx.fillStyle = ANT_COLORS[ant.type] || '#ffe600';
             ctx.fill();
         }
     });
@@ -515,11 +544,8 @@ canvas.addEventListener('mouseleave', () => {
 // Инициализация
 Promise.all([
     loadImages().catch(e => console.error(e)),
-    fetchArenaData()
-]).then(() => {
-    // Удалить обработчик refreshBtn
-    // refreshBtn.addEventListener('click', fetchArenaData);
-
-    // Автообновление данных каждые 2 секунды
-    setInterval(fetchArenaData, 2000);
-});
+    fetchArenaData(),
+    refreshBtn.addEventListener('click', () => {
+        location.reload();
+    })
+]);

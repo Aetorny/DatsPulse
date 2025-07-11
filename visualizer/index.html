@@ -8,15 +8,21 @@
 <body>
     <div class="container">
         <header>
-            <div class="stats">
-                <div>Счёт команды</div>
-                <div id="score" class="stat-value">0</div>
+            <div class="stats team-score-block">
+                <div class="score-icon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1828/1828884.png" alt="Счет" style="width:32px;height:32px;vertical-align:middle;">
+                </div>
+                <div>
+                    <div class="score-label">Счёт команды</div>
+                    <div id="score" class="stat-value team-score-value">0</div>
+                </div>
             </div>
         </header>
         
         <div class="content">
             <div class="map-container">
                 <div class="controls">
+                    <button id="refreshBtn">Обновить данные</button>
                     <div id="coordinates">Координаты: (0, 0)</div>
                 </div>
                 
@@ -28,7 +34,9 @@
                 <div class="legend">
                     <!-- Легенда для типов гексов -->
                     <div class="legend-item">
-                        <div class="legend-color" style="background-color: #2ecc40;"></div>
+                        <div class="legend-color" style="background-color: #8e44ad;">
+                            <img src="img/house.png" alt="Муравейник" style="width:20px;height:20px;vertical-align:middle;">
+                        </div>
                         <div>Муравейник</div>
                     </div>
                     <div class="legend-item">
@@ -48,38 +56,44 @@
                         <div>Камни</div>
                     </div>
                     
-                    <!-- Легенда для типов муравьев (без цвета, только картинка) -->
+                    <!-- Легенда для типов муравьев (цвет + картинка) -->
                     <div class="legend-item">
-                        <div class="legend-color" style="background: none;"></div>
+                        <div class="legend-color" style="background-color: #ffe600;">
+                            <img src="img/worker.png" alt="Рабочий" style="width:20px;height:20px;vertical-align:middle;">
+                        </div>
                         <div>Рабочий</div>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: none;"></div>
+                        <div class="legend-color" style="background-color: #e74c3c;">
+                            <img src="img/soldier.png" alt="Боец" style="width:20px;height:20px;vertical-align:middle;">
+                        </div>
                         <div>Боец</div>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: none;"></div>
+                        <div class="legend-color" style="background-color: #2ecc40;">
+                            <img src="img/scout.png" alt="Разведчик" style="width:20px;height:20px;vertical-align:middle;">
+                        </div>
                         <div>Разведчик</div>
                     </div>
                     
                     <!-- Легенда для типов ресурсов -->
                     <div class="legend-item">
-                        <div class="legend-color" style="background-color: #2ecc40;"></div>
+                        <div class="legend-color" style="background-color: #3498db;">
+                            <img src="img/apple.png" alt="Яблоко" style="width:20px;height:20px;vertical-align:middle;">
+                        </div>
                         <div>Яблоко</div>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background-color: #f5e6c8; border: 1px solid #ccc;"></div>
+                        <div class="legend-color" style="background-color: #3498db;">
+                            <img src="img/bread.png" alt="Хлеб" style="width:20px;height:20px;vertical-align:middle;">
+                        </div>
                         <div>Хлеб</div>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background-color: #ffb07c;"></div>
+                        <div class="legend-color" style="background-color: #3498db;">
+                            <img src="img/nectar.png" alt="Нектар" style="width:20px;height:20px;vertical-align:middle;">
+                        </div>
                         <div>Нектар</div>
-                    </div>
-                    
-                    <!-- Легенда для врагов (без цвета, только картинка) -->
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: none;"></div>
-                        <div>Враги</div>
                     </div>
                 </div>
             </div>
