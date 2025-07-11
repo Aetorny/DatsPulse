@@ -72,6 +72,8 @@ class App:
                     }
                 ]
             })
+            if ant['food']['amount'] > 0:
+                moves[-1]['path'][-1]['q'] += 2
 
         self.post_move(moves)
 
@@ -88,7 +90,7 @@ class App:
 
 def main() -> None:
     app = App()
-    # app.register()
+    app.register()
     # import time
     # while True:
     #     time.sleep(1)

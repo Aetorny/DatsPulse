@@ -17,7 +17,7 @@ class Ant:
         return self.data['health']
 
     @property
-    def id(self) -> int:
+    def id(self) -> str:
         return self.data['id']
     
     @property
