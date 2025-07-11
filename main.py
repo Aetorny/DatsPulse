@@ -16,6 +16,7 @@ class App:
         self.soldiers: list[Ant] = []
         self.workers: list[Ant] = []
         self.turnNo = -1
+        self.worker = None
 
     def get_hex_path_odd_r(self,
         col1: int, row1: int, col2: int, row2: int
@@ -55,6 +56,8 @@ class App:
         N = max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
 
         path = []
+        if N == 0:
+            return []
         for i in range(N + 1):
             t = i / N
             interpolated = cube_lerp(a, b, t)
@@ -81,23 +84,25 @@ class App:
 
     def go_to_food(self) -> None:
         moves = []
-        for worker in self.workers:
-            if worker.food['amount'] == 0:
-                closest_food = min(self.food, key=lambda f: self.get_distance(worker.q, worker.r, f['q'], f['r']))
-                path = self.get_hex_path_odd_r(worker.q, worker.r, closest_food['q'], closest_food['r'])
-            else:
-                path = self.get_hex_path_odd_r(worker.q, worker.r, self.home[-1]['q'], self.home[-1]['r'])
-            if len(path) > 4:
-                path = path[:4]
-            moves.append({
-                'ant': worker.id,
-                'path': [
-                    {
-                        'q': path[i][0],
-                        'r': path[i][1]
-                    } for i in range(len(path))
-                ]
-            })
+        # for worker in self.workers:
+        worker = self.worker
+        if worker.food['amount'] == 0:
+            closest_food = min(self.food, key=lambda f: self.get_distance(worker.q, worker.r, f['q'], f['r']))
+            path = self.get_hex_path_odd_r(worker.q, worker.r, closest_food['q'], closest_food['r'])
+        else:
+            h = max(self.home, key=lambda h:(h['q'], h['r']))
+            path = self.get_hex_path_odd_r(worker.q, worker.r, h['q'], h['r'])
+        if len(path) > 4:
+            path = path[:4]
+        moves.append({
+            'ant': worker.id,
+            'path': [
+                {
+                    'q': path[i][0],
+                    'r': path[i][1]
+                } for i in range(len(path))
+            ]
+        })
 
         self.post_move(moves)
 
@@ -113,7 +118,8 @@ class App:
                 self.soldiers.append(Ant(ant))
             elif type_ == 0:
                 self.workers.append(Ant(ant))
-
+        if self.worker is None:
+            self.worker = self.workers[0]
         self.go_to_food()
 
     def get_arena(self) -> None:
@@ -168,7 +174,6 @@ def main() -> None:
     while True:
         time.sleep(1)
         app.get_arena()
-    #     app.move_all_ants()
 
 
 if __name__ == '__main__':
