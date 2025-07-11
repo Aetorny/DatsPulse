@@ -21,17 +21,39 @@ def oddr_to_cube(col: int, row: int) -> tuple[int, int, int]:
      y = -x - z
      return (x, y, z)
 
+def cube_add(a : tuple[int, int, int], b : tuple[int, int, int]) -> tuple[int, ...]:
+    return tuple([sum(i) for i in zip(a, b)])
+
+
 def neighbors(q: int, r: int) -> list[tuple[int, int]]:
     coords = oddr_to_cube(q, r)
     output: list[tuple[int, int]] = []
     for offset in [(1, 0, -1), (1, -1, 0), (0, -1, 1), (-1, 0, 1), (-1, 1, 0), (0, 1, -1)]:
-        output.append(cube_to_oddr(
-            coords[0]+offset[0], coords[1]+offset[1], coords[2]+offset[2],))
+       t = cube_add(coords, offset) 
+       output.append(cube_to_oddr(t[0], t[1], t[2]))
     return output
+
+def cube_spiral(c : tuple[int, int], radius: int) -> list[tuple[int, int]]:
+    output = [c]
+
+    for k in range(1, radius+1):
+        hex = cube_add(oddr_to_cube(c[0], c[1]), (-k, k, 0))
+        base_tile = hex
+        for i in range(6):
+            for _ in range(k):
+                output.append(cube_to_oddr(hex[0], hex[1], hex[2]))
+                t = neighbors(output[-1][0], output[-1][1])[i]
+                hex = oddr_to_cube(t[0], t[1])
+
+        output.append(cube_to_oddr(base_tile[0], base_tile[1], base_tile[2]))
+    
+    return output
+
 
 class App:
     def __init__(self) -> None:
         self.scouts: list[Ant] = []
+
         self.soldiers: list[Ant] = []
         self.soldiers_positions: set[tuple[int, int]] = set()
         self.cells_around_base: Optional[set[tuple[int, int]]] = None
@@ -178,9 +200,12 @@ class App:
             elif type_ == 0:
                 self.workers.append(Ant(ant))
 
+
         assert self.cells_around_base, 'cells_around_base must not be None'
         if len(self.soldiers)-1 < len(self.cells_around_base):
             self.move_soldiers_to_guard()
+
+        self.prepare_map()
 
     def get_arena(self) -> None:
         self.moves = []
@@ -223,7 +248,6 @@ class App:
         # Видимые гексы карты
         self.map: list[dict[str, Any]] = data['map']
         self.prep_map: dict[tuple[int, int], dict[str, Any]] = {}
-        self.prepare_map()
 
         self.nextTurnIn: int = data['nextTurnIn'] # Количество секунд до следующего хода
         self.score: int = data['score'] # Текущий счёт команды
@@ -294,6 +318,9 @@ class App:
     def register(self) -> None:
         print(requests.post(URL+'register', headers=HEADERS).json())
 
+    def scout_movement(self) -> None:
+        
+
 
 def main() -> None:
     app = App()
@@ -305,4 +332,5 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    print(cube_spiral((3, 3), 4))
+    # main()
