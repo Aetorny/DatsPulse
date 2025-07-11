@@ -129,6 +129,7 @@ class App:
                         'r': cell[1]
                     }]
                 })
+                self.soldiers_positions.add((cell[0], cell[1]))
                 return
             elif self.get_distance(soldier.q, soldier.r, cell[0], cell[1]) == 2:
                 for home_cell in self.home:
@@ -146,6 +147,7 @@ class App:
                                 'r': cell[1]
                             }]
                         })
+                        self.soldiers_positions.add((cell[0], cell[1]))
                         return
             else:
                 cell1, cell2 = [cell for cell in self.home if cell != self.spot]
@@ -164,6 +166,8 @@ class App:
                         'r': cell[1]
                     }]
                 })
+                self.soldiers_positions.add((cell[0], cell[1]))
+                return
 
     def new_turn(self) -> None:
         self.scouts: list[Ant] = []
