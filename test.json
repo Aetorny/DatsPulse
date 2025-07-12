@@ -1,0 +1,14 @@
+{
+    "ants": [],
+    "enemies": [],
+    "map": [],
+    "food": [],
+    "turnNo": 0,
+    "nextTurnIn": 0,
+    "home": [],
+    "score": 0,
+    "spot": {
+        "q": 0,
+        "r": 0
+    }
+}

@@ -17,7 +17,7 @@ from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
 from collections import defaultdict
-from geometry import cube_spiral
+from controller.geometry import cube_spiral
 
 
 class Controller:
@@ -281,6 +281,8 @@ class Controller:
 
         # МУРАВЬИ
         self.ants: list[Ant] = DataTransformer.ants_transform(data['ants'])
+        if len(self.ants) == 0:
+            return
         # распределяем муравьев по отдельным группам
         self.scouts: list[ScoutAnt] = []
         self.soldiers: list[SoldierAnt] = []
