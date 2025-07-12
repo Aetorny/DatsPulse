@@ -379,14 +379,14 @@ class Controller:
         else:
             idx = l.index(Vector2(ant.q, ant.r))
             endpoint = l[idx+ant.SPEED+1]
-        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED+1]
+        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED]
 
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
         '''
         Состояние движения к еде. Муравей движется напрямую, пока не дойдет до еды
         '''
         end = self.handled_food[ant]
-        return self.get_path(ant.q, ant.r, end.q, end.r)[:ant.SPEED+1]
+        return self.get_path(ant.q, ant.r, end.q, end.r)[:ant.SPEED]
 
     def goto_base_state(self, ant: Ant) -> list[Vector2] | None:
         '''
@@ -404,12 +404,12 @@ class Controller:
                                          self.house_cell_1.r) \
                      else self.house_cell_2
             out = self.get_path(ant.q, ant.r, point.q, point.r)
-            return out[:ant.SPEED+1]
+            return out[:ant.SPEED]
 
         else:
             l = self.search_spiral_scout if ant.type == AntType.SCOUT \
                                      else self.search_spiral_worker
-            return self.get_path(ant.q, ant.r, l[10].q, l[10].r)[:ant.SPEED+1] 
+            return self.get_path(ant.q, ant.r, l[10].q, l[10].r)[:ant.SPEED] 
 
     def worker_logic(self) -> None:
         # Нужно сделать правильную аннотацию
