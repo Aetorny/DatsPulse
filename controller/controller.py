@@ -273,7 +273,7 @@ class Controller:
             'moves': moves
         }
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
-        logging.info(f'errors: {data["errors"]}')
+        logging.info(f'errors: {data.get('errors', [])}')
         self.nextTurnIn: int = data['nextTurnIn']
         print(f'nextTurnIn: {self.nextTurnIn}', time.time()-self.time)
         time.sleep(self.nextTurnIn)
