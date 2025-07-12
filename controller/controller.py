@@ -352,8 +352,16 @@ class Controller:
         
         l = self.search_spiral_scout if ant.type == AntType.SCOUT \
                                      else self.search_spiral_worker
-        idx = l.index(Vector2(ant.q, ant.r))
-        endpoint = l[idx+ant.SPEED+1]
+
+        if Vector2(ant.q, ant.r) not in l:
+            endpoint: Vector2 = l[0]
+            for i in l:
+                if self.get_distance(ant.q, ant.r, endpoint.q, endpoint.r) > \
+                   self.get_distance(ant.q, ant.r, i.q, i.r):
+                    endpoint = i
+        else:
+            idx = l.index(Vector2(ant.q, ant.r))
+            endpoint = l[idx+ant.SPEED+1]
         return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)
 
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
@@ -413,6 +421,10 @@ class Controller:
         # Запускаем состояния и делаем запросы
         for ant in self.workers:
             self.move_ant(ant.id, ant_state[ant.state](ant))
+
+        for ant in self.scouts:
+            self.move_ant(ant.id, ant_state[ant.state](ant))
+
             
         # Дальше все сделает self.post_move
 
