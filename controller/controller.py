@@ -2,6 +2,8 @@ from typing import Any
 import requests
 import time
 from models.ants.ant import Ant
+from models.ants.ant_type import AntType
+from models.ants.state_type import StateType
 from models.map import Map
 from models.food import Food
 from models.vector2 import Vector2
@@ -14,6 +16,7 @@ from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
 from collections import defaultdict
+from geometry import cube_spiral
 
 
 class Controller:
@@ -128,7 +131,7 @@ class Controller:
                     }]
                 })
 
-    def get_path(self, q_start: int, r_start: int, q_end: int, r_end: int) -> list[Vector2] | None:
+    def get_path(self, q_start: int, r_start: int, q_end: int, r_end: int) -> list[Vector2]:
         '''
         Найти ближайший путь от А до Б
 
@@ -230,8 +233,8 @@ class Controller:
         # двигаем солдат на смежные клетки для защиты
         if len(self.soldiers) - 1 < len(self.cells_around_base):
             self.move_soldiers_to_guard()
-        
-        self.go_to_food()
+        # self.go_to_food()
+        self.worker_logic()
     
     def save_response(self, data: dict, filename: str = 'test.json'):
         '''
@@ -291,6 +294,8 @@ class Controller:
 
         # ЕДА
         self.food: list[Food] = DataTransformer.food_transform(data['food'])
+        # Сопоставление id муравьев с единицей еду, которую муравей собирает
+        self.handled_food : dict[Ant, Food] = {}
 
         # ДОМА
         self.houses: list[Vector2] = DataTransformer.houses_transform(data['home'])
@@ -306,6 +311,16 @@ class Controller:
 
         # Координаты основного гекса муравейника
         self.spot_house: Vector2 = Vector2.from_dict(data['spot'])
+
+        # Маршруты поиска еды для работников и для скаутов
+        self.search_spiral_worker: list[Vector2] = cube_spiral(self.spot_house, 150, 1)
+        self.search_spiral_scout: list[Vector2] = cube_spiral(self.spot_house, 150, 4)
+
+        # Узнаем координаты двух оставшихся домов
+        if self.house_cell_1 is None or self.house_cell_2 is None:
+            cell1, cell2 = [cell for cell in self.houses if cell != self.spot_house]
+            self.house_cell_1 = Vector2(cell1.q, cell1.r)
+            self.house_cell_2 = Vector2(cell2.q, cell2.r)
 
         # проверяем, что ход новый и начинаем новый ход
         if len(self.ants) == 0 or data['turnNo'] != self.turnNo:
@@ -329,3 +344,75 @@ class Controller:
             
             # обновляем данные об арене
             self.update_arena()
+
+    def search_state(self, ant : Ant) -> list[Vector2]:
+        '''
+        Состояние поиска муравья. Ищет позицию муравья в спирали и двигает его
+        '''
+        
+        l = self.search_spiral_scout if ant.type == AntType.SCOUT \
+                                     else self.search_spiral_worker
+        idx = l.index(Vector2(ant.q, ant.r))
+        endpoint = l[idx+ant.SPEED+1]
+        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)
+
+    def goto_food_state(self, ant: Ant) -> list[Vector2]:
+        '''
+        Состояние движения к еде. Муравей движется напрямую, пока не дойдет до еды
+        '''
+        end = self.handled_food[ant]
+        return self.get_path(ant.q, ant.r, end.q, end.r)[:ant.SPEED+1]
+
+    def goto_base_state(self, ant: Ant) -> list[Vector2] | None:
+        '''
+        Состояние движения на базу. Муравей движется НЕ на базовую клетку, после возвращается на ближайшую клетку спирали (мб и не ближайшую, зависит от реализации)
+        '''
+
+        if ant.food is not None and ant.food.amount > 0: 
+            point = self.house_cell_1 \
+                    if self.get_distance(ant.q, ant.r, 
+                                         self.house_cell_1.q, 
+                                         self.house_cell_1.r) < \
+                       self.get_distance(ant.q, ant.r, 
+                                         self.house_cell_1.q, 
+                                         self.house_cell_1.r) \
+                     else self.house_cell_2
+            out = self.get_path(ant.q, ant.r, point.q, point.r)
+            if out is not None:
+                return out[:ant.SPEED+1]
+
+        else:
+            l = self.search_spiral_scout if ant.type == AntType.SCOUT \
+                                     else self.search_spiral_worker
+            return self.get_path(ant.q, ant.r, l[10].q, l[10].r)[:ant.SPEED+1] 
+
+    def worker_logic(self) -> None:
+        # Нужно сделать правильную аннотацию
+        ant_state: dict[StateType, Any] = \
+            {StateType.SEARCH: lambda ant: self.search_state(ant),
+             StateType.GOTO_FOOD: lambda ant: self.goto_food_state(ant),
+             StateType.GOTO_BASE: lambda ant: self.goto_base_state(ant)
+             }
+
+        # Присваиваем работникам единицы еды
+        for ant in self.workers:
+            if ant.id not in self.handled_food:
+                for food in self.food:
+                    if food not in self.handled_food.values():
+                        self.handled_food[ant] = food
+                        break;
+
+        # Присваиваем работникам состояния
+        for ant, food in self.handled_food.items():
+            if ant.food is not None and ant.food.amount > 0:
+                ant.state = StateType.GOTO_BASE
+            else:
+                ant.state = StateType.GOTO_FOOD
+            # Если муравья нет в этом списке, то state == SEARCH
+
+        # Запускаем состояния и делаем запросы
+        for ant in self.workers:
+            self.move_ant(ant.id, ant_state[ant.state](ant))
+            
+        # Дальше все сделает self.post_move
+
