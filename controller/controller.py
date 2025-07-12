@@ -19,7 +19,7 @@ from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
 from collections import defaultdict
-from controller.geometry import cube_spiral, rand_dir
+from controller.geometry import cube_spiral, rand_dir, neighbors
 
 
 class Controller:
@@ -35,8 +35,33 @@ class Controller:
         self.house_cell_1: Vector2 | None = None
         self.house_cell_2: Vector2 | None = None
 
+        self.hc1_in: Vector2 | None = None
+        self.hc1_out: Vector2 | None = None
+        self.hc2_in: Vector2 | None = None
+        self.hc2_out: Vector2 | None = None
+
         self.is_run = True
         logging.basicConfig(filename='controller.log', level=logging.INFO)
+
+    def _make_ins_outs(self) -> None:
+        n1 = neighbors(self.house_cell_1.q, self.house_cell_1.r)
+        n2 = neighbors(self.house_cell_2.q, self.house_cell_2.r)
+
+        for i in n1:
+            if self.map[i].type != HexType.ROCK and self.map[i].type != HexType.ANTHILL:
+                if self.hc1_in is None:
+                    self.hc1_in = i
+                elif self.hc1_out is None:
+                    self.hc1_out = i
+
+        check = (self.hc1_in, self.hc1_out)
+        for i in n2:
+            if self.map[i].type != HexType.ROCK and self.map[i].type != HexType.ANTHILL:
+                if self.hc2_in is None and i not in check:
+                    self.hc2_in = i
+                elif self.hc2_out is None and i not in check:
+                    self.hc2_out = i
+
 
     def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
         '''
@@ -358,6 +383,9 @@ class Controller:
         # Координаты основного гекса муравейника
         self.spot_house: Vector2 = Vector2.from_dict(data['spot'])
 
+        # Bebra
+        self._make_ins_outs()
+
         # Маршруты поиска еды для работников и для скаутов
         self.search_spiral_worker: list[Vector2] = cube_spiral(self.spot_house, 150, 1)
         self.search_spiral_scout: list[Vector2] = cube_spiral(self.spot_house, 150, 4)
@@ -429,14 +457,14 @@ class Controller:
         '''
 
         assert self.house_cell_1 and self.house_cell_2
-        point = self.house_cell_1 \
-                if self.get_distance(ant.q, ant.r, 
-                                        self.house_cell_1.q, 
-                                        self.house_cell_1.r) < \
-                    self.get_distance(ant.q, ant.r, 
-                                        self.house_cell_1.q, 
-                                        self.house_cell_1.r) \
-                    else self.house_cell_2
+        point = self.hc1_in \
+                if self.get_distance(ant.q, ant.r, self.hc1_in.q, self.hc1_in.r) < \
+                    self.get_distance(ant.q, ant.r, self.hc2_in.q, self.hc2_in.r) \
+                    else self.hc2_in
+
+        if ant.q == point.q and ant.r == point.r:
+            point = self.house_cell_1 if point == self.hc1_in else self.house_cell_2
+
         out = self.get_path(ant.q, ant.r, point.q, point.r)
         return out[:ant.SPEED]
 
@@ -467,10 +495,16 @@ class Controller:
 
         # Запускаем состояния и делаем запросы
         print(len(self.workers))
+
         for ant in self.workers:
-            if len(self.workers) >= 20 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
-                continue
-            self.move_ant(ant.id, ant_state[ant.state](ant))
+            if ant.q == self.house_cell_1.q and ant.r == self.house_cell_1.r:
+                self.move_ant(ant.id, [self.hc1_out])
+            elif ant.q == self.house_cell_2.q and ant.r == self.house_cell_2.r:
+                self.move_ant(ant.id, [self.hc2_out])
+            else 
+                if len(self.workers) >= 20 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
+                    continue
+                self.move_ant(ant.id, ant_state[ant.state](ant))
 
         for ant in self.scouts:
             self.move_ant(ant.id, ant_state[ant.state](ant))
