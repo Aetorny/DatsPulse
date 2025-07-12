@@ -183,7 +183,7 @@ class Controller:
                 en_col = all(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.ants)
                 l = ant_col and en_col 
 
-                if (new_coord in self.map and self.map[new_coord].type == HexType.ROCK and l) or new_coord in visited:
+                if (new_coord in self.map and (self.map[new_coord].type == HexType.ROCK or l)) or new_coord in visited:
                     continue
                 # добавляем в очередь
                 queue.appendleft(new_coord)
@@ -273,7 +273,7 @@ class Controller:
             'moves': moves
         }
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
-        logging.info(f'errors: {data["errors"]}')
+        logging.info(f'errors: {data.get("errors", [])}')
         self.nextTurnIn: int = data['nextTurnIn']
         print(f'nextTurnIn: {self.nextTurnIn}', time.time()-self.time)
         time.sleep(self.nextTurnIn)
@@ -406,23 +406,17 @@ class Controller:
         Состояние движения на базу. Муравей движется НЕ на базовую клетку, после возвращается на ближайшую клетку спирали (мб и не ближайшую, зависит от реализации)
         '''
 
-        if ant.food.amount > 0:
-            assert self.house_cell_1 and self.house_cell_2
-            point = self.house_cell_1 \
-                    if self.get_distance(ant.q, ant.r, 
-                                         self.house_cell_1.q, 
-                                         self.house_cell_1.r) < \
-                       self.get_distance(ant.q, ant.r, 
-                                         self.house_cell_1.q, 
-                                         self.house_cell_1.r) \
-                     else self.house_cell_2
-            out = self.get_path(ant.q, ant.r, point.q, point.r)
-            return out[:ant.SPEED]
-
-        else:
-            l = self.search_spiral_scout if ant.type == AntType.SCOUT \
-                                     else self.search_spiral_worker
-            return self.get_path(ant.q, ant.r, l[10].q, l[10].r)[:ant.SPEED] 
+        assert self.house_cell_1 and self.house_cell_2
+        point = self.house_cell_1 \
+                if self.get_distance(ant.q, ant.r, 
+                                        self.house_cell_1.q, 
+                                        self.house_cell_1.r) < \
+                    self.get_distance(ant.q, ant.r, 
+                                        self.house_cell_1.q, 
+                                        self.house_cell_1.r) \
+                    else self.house_cell_2
+        out = self.get_path(ant.q, ant.r, point.q, point.r)
+        return out[:ant.SPEED]
 
     def worker_logic(self) -> None:
         # Нужно сделать правильную аннотацию
