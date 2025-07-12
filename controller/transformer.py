@@ -1,3 +1,4 @@
+from typing import Any
 from models.map import Map
 from models.hex import Hex
 from models.hex_type import HexType
@@ -31,7 +32,7 @@ class DataTransformer:
         return food_list
     
     @staticmethod
-    def ants_transform(data: list[dict]) -> list[Ant]:
+    def ants_transform(data: list[dict[str, Any]]) -> list[Ant]:
         ants: list[Ant] = []
         for ant in data:
             if ant['type'] == AntType.WORKER.value:
@@ -43,7 +44,7 @@ class DataTransformer:
         return ants
     
     @staticmethod
-    def enemies_transform(data: list[dict]) -> list[Ant]:
+    def enemies_transform(data: list[dict[str, Any]]) -> list[Ant]:
         ants: list[Ant] = []
         for ant in data:
             if ant['type'] == AntType.WORKER.value:
@@ -55,7 +56,7 @@ class DataTransformer:
         return ants
     
     @staticmethod
-    def houses_transform(data: list[dict]) -> list[Vector2]:
+    def houses_transform(data: list[dict[str, Any]]) -> list[Vector2]:
         houses: list[Vector2] = []
         for house in data:
             houses.append(Vector2(house['q'], house['r']))

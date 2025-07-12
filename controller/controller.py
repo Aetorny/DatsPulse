@@ -29,6 +29,9 @@ class Controller:
         self.moves: list[dict[str, Any]] = []
         self.turnNo: int = -1
 
+        self.house_cell_1: Vector2 | None = None
+        self.house_cell_2: Vector2 | None = None
+
         self.is_run = True
 
     def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
@@ -179,7 +182,6 @@ class Controller:
         
         return path
         
-    
     def move_ant(self, ant_id: str, path: list[Vector2]) -> None:
         '''
         Добавляет путь движения муравья к запросу
@@ -200,13 +202,8 @@ class Controller:
         Идти добывать еду
         '''
         for worker in self.workers:
-            if worker.food is None:
-                target = self.get_the_nearest_food_to_house()
-                path = self.get_path(worker.q, worker.r, target.q, target.r)
-            else:
-                path = self.get_path(worker.q, worker.r, self.spot_house.q, self.spot_house.r)
-            if path is not None:
-                self.move_ant(worker.id, path)
+            path = self.get_path(worker.q, worker.r, self.spot_house.q, self.spot_house.r)
+            self.move_ant(worker.id, path)
     
     def set_cells_around_base(self) -> None:
         '''
@@ -236,13 +233,12 @@ class Controller:
         # self.go_to_food()
         self.worker_logic()
     
-    def save_response(self, data: dict, filename: str = 'test.json'):
+    def save_response(self, data: dict[str, Any], filename: str = 'test.json'):
         '''
         Сохраняет ответ запроса в файл
         '''
         with open(filename, 'w') as f:
             json.dump(data, f, indent=4)
-
 
     def post_move(self, moves: list[dict[str, Any]]) -> None:
         '''
@@ -376,7 +372,8 @@ class Controller:
         Состояние движения на базу. Муравей движется НЕ на базовую клетку, после возвращается на ближайшую клетку спирали (мб и не ближайшую, зависит от реализации)
         '''
 
-        if ant.food is not None and ant.food.amount > 0: 
+        if ant.food.amount > 0:
+            assert self.house_cell_1 and self.house_cell_2
             point = self.house_cell_1 \
                     if self.get_distance(ant.q, ant.r, 
                                          self.house_cell_1.q, 
@@ -386,8 +383,7 @@ class Controller:
                                          self.house_cell_1.r) \
                      else self.house_cell_2
             out = self.get_path(ant.q, ant.r, point.q, point.r)
-            if out is not None:
-                return out[:ant.SPEED+1]
+            return out[:ant.SPEED+1]
 
         else:
             l = self.search_spiral_scout if ant.type == AntType.SCOUT \
@@ -396,23 +392,22 @@ class Controller:
 
     def worker_logic(self) -> None:
         # Нужно сделать правильную аннотацию
-        ant_state: dict[StateType, Any] = \
-            {StateType.SEARCH: lambda ant: self.search_state(ant),
-             StateType.GOTO_FOOD: lambda ant: self.goto_food_state(ant),
-             StateType.GOTO_BASE: lambda ant: self.goto_base_state(ant)
-             }
+        ant_state: dict[StateType, Any] = {
+            StateType.SEARCH: lambda ant: self.search_state(ant), # type: ignore
+            StateType.GOTO_FOOD: lambda ant: self.goto_food_state(ant), # type: ignore
+            StateType.GOTO_BASE: lambda ant: self.goto_base_state(ant) # type: ignore
+        }
 
         # Присваиваем работникам единицы еды
         for ant in self.workers:
-            if ant.id not in self.handled_food:
-                for food in self.food:
-                    if food not in self.handled_food.values():
-                        self.handled_food[ant] = food
-                        break;
+            for food in self.food:
+                if food not in self.handled_food.values():
+                    self.handled_food[ant] = food
+                    break
 
         # Присваиваем работникам состояния
         for ant, food in self.handled_food.items():
-            if ant.food is not None and ant.food.amount > 0:
+            if ant.food.amount > 0:
                 ant.state = StateType.GOTO_BASE
             else:
                 ant.state = StateType.GOTO_FOOD
@@ -424,7 +419,5 @@ class Controller:
 
         for ant in self.scouts:
             self.move_ant(ant.id, ant_state[ant.state](ant))
-
             
         # Дальше все сделает self.post_move
-
