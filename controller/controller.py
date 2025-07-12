@@ -19,7 +19,7 @@ from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
 from collections import defaultdict
-from controller.geometry import circle, cube_spiral, rand_dir
+from controller.geometry import cube_spiral
 
 
 class Controller:
@@ -148,6 +148,7 @@ class Controller:
 
         Поиск в ширину
         '''
+
         path: list[Vector2] = []
         graph: dict[Vector2, set[Vector2]] = defaultdict(set)
 
@@ -200,7 +201,6 @@ class Controller:
                     cur_coord = key
                     continue
         path.reverse()
-        self.ttt += time.time() - t
         return path
         
     def move_ant(self, ant_id: str, path: list[Vector2]) -> None:
@@ -273,9 +273,9 @@ class Controller:
             'moves': moves
         }
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
-        logging.info(f'errors: {data.get('errors', [])}')
+        logging.info(f'errors: {data["errors"]}')
         self.nextTurnIn: int = data['nextTurnIn']
-        print(f'nextTurnIn: {self.nextTurnIn}', time.time()-self.time, self.ttt)
+        print(f'nextTurnIn: {self.nextTurnIn}', time.time()-self.time)
         time.sleep(self.nextTurnIn)
 
     def register(self) -> None:
@@ -294,7 +294,6 @@ class Controller:
         if data.get('error', None):
             return print(data)
         self.time = time.time()
-        self.ttt = 0
         # сохраняем response в файл
         self.save_response(data)
 
@@ -395,6 +394,7 @@ class Controller:
 
             pass
 
+
         return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED]
 
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
@@ -408,10 +408,24 @@ class Controller:
         '''
         Состояние движения на базу. Муравей движется НЕ на базовую клетку, после возвращается на ближайшую клетку спирали (мб и не ближайшую, зависит от реализации)
         '''
-        point = random.choice([self.spot_house, self.house_cell_1, self.house_cell_2])
-        out = self.get_path(ant.q, ant.r, point.q, point.r)
-        return out[:ant.SPEED]
 
+        if ant.food.amount > 0:
+            assert self.house_cell_1 and self.house_cell_2
+            point = self.house_cell_1 \
+                    if self.get_distance(ant.q, ant.r, 
+                                         self.house_cell_1.q, 
+                                         self.house_cell_1.r) < \
+                       self.get_distance(ant.q, ant.r, 
+                                         self.house_cell_1.q, 
+                                         self.house_cell_1.r) \
+                     else self.house_cell_2
+            out = self.get_path(ant.q, ant.r, point.q, point.r)
+            return out[:ant.SPEED]
+
+        else:
+            l = self.search_spiral_scout if ant.type == AntType.SCOUT \
+                                     else self.search_spiral_worker
+            return self.get_path(ant.q, ant.r, l[10].q, l[10].r)[:ant.SPEED] 
 
     def worker_logic(self) -> None:
         # Нужно сделать правильную аннотацию
@@ -442,4 +456,5 @@ class Controller:
 
         for ant in self.scouts:
             self.move_ant(ant.id, ant_state[ant.state](ant))
+            
         # Дальше все сделает self.post_move
