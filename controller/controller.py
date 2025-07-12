@@ -501,7 +501,7 @@ class Controller:
                 self.move_ant(ant.id, [self.hc1_out])
             elif ant.q == self.house_cell_2.q and ant.r == self.house_cell_2.r:
                 self.move_ant(ant.id, [self.hc2_out])
-            else 
+            else:
                 if len(self.workers) >= 20 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
                     continue
                 self.move_ant(ant.id, ant_state[ant.state](ant))
