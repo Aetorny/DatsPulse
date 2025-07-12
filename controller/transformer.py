@@ -2,7 +2,6 @@ from models.map import Map
 from models.hex import Hex
 from models.hex_type import HexType
 from models.food import Food
-from models.food_type import FoodType
 from models.ants.ant import Ant
 from models.ants.ant_type import AntType
 from models.ants.worker import WorkerAnt
