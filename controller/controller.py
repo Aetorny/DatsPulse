@@ -19,7 +19,7 @@ from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
 from collections import defaultdict
-from controller.geometry import cube_spiral, rand_dir
+from controller.geometry import circle, cube_spiral, rand_dir
 
 
 class Controller:
@@ -375,7 +375,7 @@ class Controller:
         Состояние поиска муравья. Ищет позицию муравья в спирали и двигает его
         '''
         
-        endpoint = random.choice(list(self.map.keys()))
+        endpoint = random.choice(circle(Vector2(ant.q, ant.r), ant.SPEED))
         tries = 0
         while (self.get_distance(endpoint.q, endpoint.r, ant.q, ant.r) < ant.SPEED+1 or \
                self.map[endpoint].type == HexType.ROCK or \

@@ -41,7 +41,22 @@ def cube_spiral(c : Vector2, radius: int, span: int) -> list[Vector2]:
     
     return output
 
+def circle(c: Vector2, radius: int) -> list[Vector2]:
+    output = []
+     
+    hex = cube_add(oddr_to_cube(c.q, c.r), (-radius, radius, 0))
+    base_tile = hex
+
+    for i in range(6):
+        for _ in range(radius):
+            output.append(cube_to_oddr(hex[0], hex[1], hex[2]))
+            t = neighbors(output[-1].q, output[-1].r)[i]
+            hex = oddr_to_cube(t.q, t.r)
+    
+    return output
+
 def rand_dir() -> Vector2:
     l = [(1, 0, -1), (1, -1, 0), (0, -1, 1), (-1, 0, 1), (-1, 1, 0), (0, 1, -1)]
     t = l[ random.randint(0, len(l)-1) ]
     return cube_to_oddr(4*t[0], 4*t[1], 4*t[2])
+
