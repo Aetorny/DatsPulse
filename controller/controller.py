@@ -268,7 +268,7 @@ class Controller:
             'moves': moves
         }
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
-        print(data)
+        logging.info(f'errors: {data["errors"]}')
         self.nextTurnIn: int = data['nextTurnIn']
         print(f'nextTurnIn: {self.nextTurnIn}')
         time.sleep(self.nextTurnIn)
@@ -300,6 +300,7 @@ class Controller:
         self.scouts: list[ScoutAnt] = []
         self.soldiers: list[SoldierAnt] = []
         self.workers: list[WorkerAnt] = []
+        logging.info(f'ants: {[(ant.id, ant.q, ant.r) for ant in self.ants]}')
         for ant in self.ants:
             if ant.type == AntType.SCOUT:
                 self.scouts.append(ant)
