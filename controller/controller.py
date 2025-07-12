@@ -164,7 +164,11 @@ class Controller:
                 # генерируем новую координату, которую надо посетить
                 new_coord = coord + d
                 # если попался камень или клетка уже посещена - пропускаем
-                if (new_coord in self.map and self.map[new_coord].type == HexType.ROCK) or new_coord in visited:
+                ant_col = all(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.ants)
+                en_col = all(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.ants)
+                l = ant_col and en_col 
+
+                if (new_coord in self.map and self.map[new_coord].type == HexType.ROCK and l) or new_coord in visited:
                     continue
                 # добавляем в очередь
                 queue.appendleft(new_coord)
