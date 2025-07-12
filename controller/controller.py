@@ -148,7 +148,6 @@ class Controller:
 
         Поиск в ширину
         '''
-
         path: list[Vector2] = []
         graph: dict[Vector2, set[Vector2]] = defaultdict(set)
 
@@ -201,6 +200,7 @@ class Controller:
                     cur_coord = key
                     continue
         path.reverse()
+        self.ttt += time.time() - t
         return path
         
     def move_ant(self, ant_id: str, path: list[Vector2]) -> None:
@@ -275,7 +275,7 @@ class Controller:
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
         logging.info(f'errors: {data.get('errors', [])}')
         self.nextTurnIn: int = data['nextTurnIn']
-        print(f'nextTurnIn: {self.nextTurnIn}', time.time()-self.time)
+        print(f'nextTurnIn: {self.nextTurnIn}', time.time()-self.time, self.ttt)
         time.sleep(self.nextTurnIn)
 
     def register(self) -> None:
@@ -294,6 +294,7 @@ class Controller:
         if data.get('error', None):
             return print(data)
         self.time = time.time()
+        self.ttt = 0
         # сохраняем response в файл
         self.save_response(data)
 
@@ -374,7 +375,6 @@ class Controller:
         '''
         Состояние поиска муравья. Ищет позицию муравья в спирали и двигает его
         '''
-        
         endpoint = random.choice(list(self.map.keys()))
         tries = 0
         while (self.get_distance(endpoint.q, endpoint.r, ant.q, ant.r) < ant.SPEED+1 or \
@@ -394,7 +394,6 @@ class Controller:
 
             pass
 
-
         return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED]
 
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
@@ -408,7 +407,6 @@ class Controller:
         '''
         Состояние движения на базу. Муравей движется НЕ на базовую клетку, после возвращается на ближайшую клетку спирали (мб и не ближайшую, зависит от реализации)
         '''
-
         point = random.choice([self.spot_house, self.house_cell_1, self.house_cell_2])
         out = self.get_path(ant.q, ant.r, point.q, point.r)
         return out[:ant.SPEED]
@@ -443,5 +441,4 @@ class Controller:
 
         for ant in self.scouts:
             self.move_ant(ant.id, ant_state[ant.state](ant))
-            
         # Дальше все сделает self.post_move
