@@ -1,4 +1,5 @@
 from models.vector2 import Vector2
+import random
 
 def cube_to_oddr(x: int, y: int, z: int) -> Vector2:
     row = z
@@ -39,3 +40,8 @@ def cube_spiral(c : Vector2, radius: int, span: int) -> list[Vector2]:
         output.append(cube_to_oddr(base_tile[0], base_tile[1], base_tile[2]))
     
     return output
+
+def rand_dir() -> Vector2:
+    l = [(1, 0, -1), (1, -1, 0), (0, -1, 1), (-1, 0, 1), (-1, 1, 0), (0, 1, -1)]
+    t = l[ random.randint(0, len(l)-1) ]
+    return cube_to_oddr(4*t[0], 4*t[1], 4*t[2])

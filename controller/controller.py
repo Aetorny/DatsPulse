@@ -17,7 +17,7 @@ from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
 from collections import defaultdict
-from controller.geometry import cube_spiral
+from controller.geometry import cube_spiral, rand_dir
 
 
 class Controller:
@@ -364,6 +364,10 @@ class Controller:
         
         l = self.search_spiral_scout if ant.type == AntType.SCOUT \
                                      else self.search_spiral_worker
+        # рандомизация выхода с базы
+        if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
+            d = rand_dir()
+            return self.get_path(ant.q, ant.r, d.q, d.r)
 
         if Vector2(ant.q, ant.r) not in l:
             endpoint: Vector2 = l[0]
