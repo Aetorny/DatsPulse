@@ -292,11 +292,11 @@ class Controller:
         self.soldiers: list[SoldierAnt] = []
         self.workers: list[WorkerAnt] = []
         for ant in self.ants:
-            if isinstance(ant, ScoutAnt):
+            if ant.type == AntType.SCOUT:
                 self.scouts.append(ant)
-            elif isinstance(ant, SoldierAnt):
+            elif ant.type == AntType.FIGHTER:
                 self.soldiers.append(ant)
-            elif isinstance(ant, WorkerAnt):
+            elif ant.type == AntType.WORKER:
                 self.workers.append(ant)
 
         # ВРАГИ

@@ -32,3 +32,6 @@ class Ant:
             type = AntType(data["type"]),
             food=Food.from_dict(data['food'] | {'r': 0, 'q': 0})
         )
+
+    def __hash__(self) -> int:
+        return hash(self.id)
