@@ -86,6 +86,12 @@ class Controller:
         if soldier.q != self.spot_house.q or soldier.r != self.spot_house.r:
             return
         
+        self.soldiers_positions = set()
+        for soldier in self.soldiers:
+            for cell in self.cells_around_base:
+                if soldier.q == cell.q and soldier.r == cell.r:
+                    self.soldiers_positions.add(Vector2(cell.q, cell.r))
+        
         # получаем свободные клетки для размещения
         empty_cells = list(self.cells_around_base.difference(self.soldiers_positions))
         assert len(empty_cells) > 0, 'empty_cells must not be empty'
@@ -179,9 +185,9 @@ class Controller:
                 # генерируем новую координату, которую надо посетить
                 new_coord = coord + d
                 # если попался камень или клетка уже посещена - пропускаем
-                ant_col = all(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.ants)
-                en_col = all(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.ants)
-                l = ant_col and en_col 
+                ant_col = any(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.ants)
+                en_col = any(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.enemies)
+                l = ant_col or en_col
 
                 if (new_coord in self.map and (self.map[new_coord].type == HexType.ROCK or l)) or new_coord in visited:
                     continue
@@ -380,9 +386,6 @@ class Controller:
         l = self.search_spiral_scout if ant.type == AntType.SCOUT \
                                      else self.search_spiral_worker
         # рандомизация выхода с базы
-        # if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
-        #     d = rand_dir()
-        #     return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
         if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
             d = rand_dir()
             return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
@@ -450,6 +453,7 @@ class Controller:
             # Если муравья нет в этом списке, то state == SEARCH
 
         # Запускаем состояния и делаем запросы
+        print(len(self.workers))
         for ant in self.workers:
             if len(self.workers) >= 20 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
                 continue
