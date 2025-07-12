@@ -147,13 +147,7 @@ class Controller:
 
         Поиск в ширину
         '''
-        DIRECTIONS = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0)]
-        if r_start % 2 == 1:
-            DIRECTIONS.append(Vector2(1, 1))
-            DIRECTIONS.append(Vector2(1, -1))
-        else:
-            DIRECTIONS.append(Vector2(-1, -1))
-            DIRECTIONS.append(Vector2(-1, 1))
+        
 
         path: list[Vector2] = []
         graph: dict[Vector2, set[Vector2]] = defaultdict(set)
@@ -164,15 +158,23 @@ class Controller:
         queue: deque[Vector2] = deque()
         queue.append(start_coord)
 
-        visited: set[Vector2] = set()
+        visited: set[Vector2] = set([start_coord])
         t = time.time()
         while queue:
             if time.time() - t > 1:
-                print(f'time: {time.time() - t}')
+                print(len(queue), f'time: {time.time() - t}')
             coord = queue.pop()
             if coord == end_coord:
                 break
-            visited.add(coord)
+            
+            DIRECTIONS = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0)]
+            if coord.r % 2 == 1:
+                DIRECTIONS.append(Vector2(1, 1))
+                DIRECTIONS.append(Vector2(1, -1))
+            else:
+                DIRECTIONS.append(Vector2(-1, -1))
+                DIRECTIONS.append(Vector2(-1, 1))
+                
             for d in DIRECTIONS:
                 # генерируем новую координату, которую надо посетить
                 new_coord = coord + d
@@ -185,6 +187,7 @@ class Controller:
                     continue
                 # добавляем в очередь
                 queue.appendleft(new_coord)
+                visited.add(new_coord)
                 # добавляем в граф
                 graph[coord].add(new_coord)
         
