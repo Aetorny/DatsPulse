@@ -409,23 +409,10 @@ class Controller:
         Состояние движения на базу. Муравей движется НЕ на базовую клетку, после возвращается на ближайшую клетку спирали (мб и не ближайшую, зависит от реализации)
         '''
 
-        if ant.food.amount > 0:
-            assert self.house_cell_1 and self.house_cell_2
-            point = self.house_cell_1 \
-                    if self.get_distance(ant.q, ant.r, 
-                                         self.house_cell_1.q, 
-                                         self.house_cell_1.r) < \
-                       self.get_distance(ant.q, ant.r, 
-                                         self.house_cell_1.q, 
-                                         self.house_cell_1.r) \
-                     else self.house_cell_2
-            out = self.get_path(ant.q, ant.r, point.q, point.r)
-            return out[:ant.SPEED]
+        point = random.choice([self.spot_house, self.house_cell_1, self.house_cell_2])
+        out = self.get_path(ant.q, ant.r, point.q, point.r)
+        return out[:ant.SPEED]
 
-        else:
-            l = self.search_spiral_scout if ant.type == AntType.SCOUT \
-                                     else self.search_spiral_worker
-            return self.get_path(ant.q, ant.r, l[10].q, l[10].r)[:ant.SPEED] 
 
     def worker_logic(self) -> None:
         # Нужно сделать правильную аннотацию
