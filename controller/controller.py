@@ -78,20 +78,25 @@ class Controller:
 
         assert self.cells_around_base, 'cells_around_base must not be None'
 
-        # пытаемся найти солдата, который заспавнился в муравейнике
-        soldier = None
-        for soldier in self.soldiers:
-            if soldier.q == self.spot_house.q and soldier.r == self.spot_house.r:
-                break
-        if soldier.q != self.spot_house.q or soldier.r != self.spot_house.r:
-            return
-        
+        # получаем клетки вокруг муравейника
         self.soldiers_positions = set()
         for soldier in self.soldiers:
             for cell in self.cells_around_base:
                 if soldier.q == cell.q and soldier.r == cell.r:
                     self.soldiers_positions.add(Vector2(cell.q, cell.r))
-        
+
+        # пытаемся найти солдата, который заспавнился в муравейнике
+        soldier = None
+        for soldier in self.soldiers:
+            if soldier.q == self.spot_house.q and soldier.r == self.spot_house.r:
+                break
+            elif soldier.q == self.house_cell_1.q and soldier.r == self.house_cell_1.r:
+                break
+            elif soldier.q == self.house_cell_2.q and soldier.r == self.house_cell_2.r:
+                break
+        else:
+            return
+
         # получаем свободные клетки для размещения
         empty_cells = list(self.cells_around_base.difference(self.soldiers_positions))
         assert len(empty_cells) > 0, 'empty_cells must not be empty'
@@ -111,7 +116,6 @@ class Controller:
                         'r': cell.r
                     }]
                 })
-                self.soldiers_positions.add(Vector2(cell.q, cell.r))
                 return
             elif self.get_distance(soldier.q, soldier.r, cell.q, cell.r) == 2:
                 for home_cell in [self.house_cell_1, self.house_cell_2]:
@@ -127,7 +131,6 @@ class Controller:
                                 'r': cell.r
                             }]
                         })
-                        self.soldiers_positions.add(Vector2(cell.q, cell.r))
                         return
             else:
                 cell1, cell2 = self.house_cell_1, self.house_cell_2
@@ -146,7 +149,16 @@ class Controller:
                         'r': cell.r
                     }]
                 })
-                self.soldiers_positions.add(Vector2(cell.q, cell.r))
+                return
+            for home_cell in [self.house_cell_1, self.house_cell_2]:
+                if self.get_distance(soldier.q, soldier.r, home_cell.q, home_cell.r) == 1:
+                    self.moves.append({
+                        'ant': soldier.id,
+                        'path': [{
+                            'q': home_cell.q,
+                            'r': home_cell.r
+                        }]
+                    })
 
     def get_path(self, q_start: int, r_start: int, q_end: int, r_end: int) -> list[Vector2]:
         '''
@@ -167,8 +179,9 @@ class Controller:
         visited: set[Vector2] = set([start_coord])
         t = time.time()
         while queue:
-            if time.time() - t > 1:
+            if time.time() - t > 0.3:
                 print(len(queue), f'time: {time.time() - t}')
+                return []
             coord = queue.pop()
             if coord == end_coord:
                 break
@@ -198,7 +211,7 @@ class Controller:
                 graph[coord].add(new_coord)
         
         path: list[Vector2] = []
-            
+        
         cur_coord = end_coord
         while cur_coord != start_coord:
             path.append(cur_coord)
@@ -386,9 +399,9 @@ class Controller:
         l = self.search_spiral_scout if ant.type == AntType.SCOUT \
                                      else self.search_spiral_worker
         # рандомизация выхода с базы
-        if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
-            d = rand_dir()
-            return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
+        # if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
+        #     d = rand_dir()
+        #     return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
 
         if Vector2(ant.q, ant.r) not in l:
             endpoint: Vector2 = l[0]
