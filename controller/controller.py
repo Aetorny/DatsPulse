@@ -152,8 +152,8 @@ class Controller:
             DIRECTIONS.append(Vector2(1, 1))
             DIRECTIONS.append(Vector2(1, -1))
         else:
-            DIRECTIONS.append(Vector2(-1, 1))
             DIRECTIONS.append(Vector2(-1, -1))
+            DIRECTIONS.append(Vector2(-1, 1))
 
         path: list[Vector2] = []
         graph: dict[Vector2, set[Vector2]] = defaultdict(set)
@@ -165,8 +165,10 @@ class Controller:
         queue.append(start_coord)
 
         visited: set[Vector2] = set()
-
+        t = time.time()
         while queue:
+            if time.time() - t > 1:
+                print(f'time: {time.time() - t}')
             coord = queue.pop()
             if coord == end_coord:
                 break
