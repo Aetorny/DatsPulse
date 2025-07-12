@@ -236,7 +236,7 @@ class Controller:
                 l = ant_col or en_col
 
                 if (new_coord in self.map and (self.map[new_coord].type == HexType.ROCK or \
-                    self.map[new_coord].type == HexType.ANTHILL)) or new_coord in visited:
+                    self.map[new_coord].type == HexType.ANTHILL or l)) or new_coord in visited:
                     continue
                 # добавляем в очередь
                 closest_coord = min(closest_coord, new_coord, key=lambda c: self.get_distance(c.q, c.r, end_coord.q, end_coord.r))
@@ -254,6 +254,8 @@ class Controller:
                 return []
             path.append(cur_coord)
             keys = reverse_graph[cur_coord]
+            if len(keys) == 0:
+                return []
             cur_coord = keys.pop()
             # for key, value in graph.items():
             #     if cur_coord in value:
