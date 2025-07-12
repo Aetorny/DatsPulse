@@ -144,7 +144,7 @@ class Controller:
         DIRECTIONS = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0), Vector2(1, 1), Vector2(-1, -1)]
 
         path: list[Vector2] = []
-        graph = defaultdict(set)
+        graph: dict[Vector2, set[Vector2]] = defaultdict(set)
 
         start_coord: Vector2 = Vector2(q_start, r_start)
         end_coord: Vector2 = Vector2(q_end, r_end)
