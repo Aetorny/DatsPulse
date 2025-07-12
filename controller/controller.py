@@ -378,6 +378,9 @@ class Controller:
         l = self.search_spiral_scout if ant.type == AntType.SCOUT \
                                      else self.search_spiral_worker
         # рандомизация выхода с базы
+        # if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
+        #     d = rand_dir()
+        #     return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
         if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
             d = rand_dir()
             return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
@@ -391,6 +394,7 @@ class Controller:
         else:
             idx = l.index(Vector2(ant.q, ant.r))
             endpoint = l[idx+ant.SPEED+1]
+        
         return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED]
 
 
@@ -421,9 +425,10 @@ class Controller:
     def worker_logic(self) -> None:
         # Нужно сделать правильную аннотацию
         ant_state: dict[StateType, Any] = {
-            StateType.SEARCH: lambda ant: self.search_state(ant), # type: ignore
+            StateType.SEARCH: lambda ant: self.search_state(ant),       # type: ignore
             StateType.GOTO_FOOD: lambda ant: self.goto_food_state(ant), # type: ignore
-            StateType.GOTO_BASE: lambda ant: self.goto_base_state(ant) # type: ignore
+            StateType.GOTO_BASE: lambda ant: self.goto_base_state(ant), # type: ignore
+            StateType.PENDING: lambda _: []                             # type: ignore
         }
 
         # Присваиваем работникам единицы еды
@@ -433,10 +438,12 @@ class Controller:
                     self.handled_food[ant] = food
                     break
 
+        has_gotofood = False
         # Присваиваем работникам состояния
         for ant, food in self.handled_food.items():
-            if ant.food.amount > 0:
+            if ant.food.amount > 0 and not has_gotofood:
                 ant.state = StateType.GOTO_BASE
+                has_gotofood = True
             else:
                 ant.state = StateType.GOTO_FOOD
             # Если муравья нет в этом списке, то state == SEARCH
