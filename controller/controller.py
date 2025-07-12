@@ -298,6 +298,8 @@ class Controller:
         self.save_response(data)
 
         # МУРАВЬИ
+        if data.get('ants', None) is None:
+            return
         self.ants: list[Ant] = DataTransformer.ants_transform(data['ants'])
         if len(self.ants) == 0:
             return
@@ -428,7 +430,6 @@ class Controller:
             StateType.SEARCH: lambda ant: self.search_state(ant),       # type: ignore
             StateType.GOTO_FOOD: lambda ant: self.goto_food_state(ant), # type: ignore
             StateType.GOTO_BASE: lambda ant: self.goto_base_state(ant), # type: ignore
-            StateType.PENDING: lambda _: []                             # type: ignore
         }
 
         # Присваиваем работникам единицы еды
@@ -441,18 +442,17 @@ class Controller:
         has_gotofood = False
         # Присваиваем работникам состояния
         for ant, food in self.handled_food.items():
-            if ant.food.amount > 0:
-                if not has_gotofood:
-                    ant.state = StateType.GOTO_BASE
-                    has_gotofood = True
-                else
-                    ant.state = StateType.PENDING
+            if ant.food.amount > 0 and not has_gotofood:
+                ant.state = StateType.GOTO_BASE
+                has_gotofood = True
             else:
                 ant.state = StateType.GOTO_FOOD
             # Если муравья нет в этом списке, то state == SEARCH
 
         # Запускаем состояния и делаем запросы
         for ant in self.workers:
+            if len(self.workers) >= 20 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
+                continue
             self.move_ant(ant.id, ant_state[ant.state](ant))
 
         for ant in self.scouts:
