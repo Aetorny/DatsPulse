@@ -99,6 +99,7 @@ class Controller:
                         'r': cell.r
                     }]
                 })
+                self.soldiers_positions.add(Vector2(cell.q, cell.r))
                 return
             elif self.get_distance(soldier.q, soldier.r, cell.q, cell.r) == 2:
                 for home_cell in self.houses:
@@ -116,6 +117,7 @@ class Controller:
                                 'r': cell.r
                             }]
                         })
+                        self.soldiers_positions.add(Vector2(cell.q, cell.r))
                         return
             else:
                 cell1, cell2 = [cell for cell in self.houses if cell != self.spot_house]
@@ -134,6 +136,7 @@ class Controller:
                         'r': cell.r
                     }]
                 })
+                self.soldiers_positions.add(Vector2(cell.q, cell.r))
 
     def get_path(self, q_start: int, r_start: int, q_end: int, r_end: int) -> list[Vector2]:
         '''
@@ -148,7 +151,6 @@ class Controller:
 
         start_coord: Vector2 = Vector2(q_start, r_start)
         end_coord: Vector2 = Vector2(q_end, r_end)
-
 
         queue: deque[Vector2] = deque()
         queue.append(start_coord)
@@ -184,7 +186,7 @@ class Controller:
                 if cur_coord in value:
                     cur_coord = key
                     continue
-        
+        path.reverse()
         return path
         
     def move_ant(self, ant_id: str, path: list[Vector2]) -> None:
@@ -234,8 +236,8 @@ class Controller:
 
         # двигаем солдат на смежные клетки для защиты
         t = time.time()
-        if len(self.soldiers) - 1 < len(self.cells_around_base):
-            self.move_soldiers_to_guard()
+        # if len(self.soldiers) - 1 < len(self.cells_around_base):
+        #     self.move_soldiers_to_guard()
         print(f'move_soldiers_to_guard: {time.time() - t}')
 
         # self.go_to_food()
@@ -279,9 +281,7 @@ class Controller:
             return print(data)
         
         # сохраняем response в файл
-        t = time.time()
         self.save_response(data)
-        print(f'save_response time: {time.time() - t}')
 
         # МУРАВЬИ
         self.ants: list[Ant] = DataTransformer.ants_transform(data['ants'])
@@ -323,10 +323,8 @@ class Controller:
         self.spot_house: Vector2 = Vector2.from_dict(data['spot'])
 
         # Маршруты поиска еды для работников и для скаутов
-        t = time.time()
         self.search_spiral_worker: list[Vector2] = cube_spiral(self.spot_house, 150, 1)
         self.search_spiral_scout: list[Vector2] = cube_spiral(self.spot_house, 150, 4)
-        print(f'cube_spiral time: {time.time() - t}')
 
         # Узнаем координаты двух оставшихся домов
         if self.house_cell_1 is None or self.house_cell_2 is None:
@@ -374,7 +372,7 @@ class Controller:
         else:
             idx = l.index(Vector2(ant.q, ant.r))
             endpoint = l[idx+ant.SPEED+1]
-        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)
+        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED+1]
 
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
         '''
