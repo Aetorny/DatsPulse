@@ -275,7 +275,7 @@ class Controller:
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
         logging.info(f'errors: {data["errors"]}')
         self.nextTurnIn: int = data['nextTurnIn']
-        print(f'nextTurnIn: {self.nextTurnIn}')
+        print(f'nextTurnIn: {self.nextTurnIn}', time.time()-self.time)
         time.sleep(self.nextTurnIn)
 
     def register(self) -> None:
@@ -293,7 +293,7 @@ class Controller:
         data: dict[str, Any] = response.json()
         if data.get('error', None):
             return print(data)
-        
+        self.time = time.time()
         # сохраняем response в файл
         self.save_response(data)
 
@@ -384,6 +384,8 @@ class Controller:
                ):
 
             tries += 1
+            if tries > 10:
+                return self.get_path(ant.q, ant.r, self.spot_house.q, self.spot_house.r)[:ant.SPEED]
             new_end = random.choice(list(self.map.keys()))
 
             if self.get_distance(new_end.q, new_end.r, self.spot_house.q, self.spot_house.r) >= \
@@ -393,7 +395,7 @@ class Controller:
             pass
 
 
-        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)
+        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED]
 
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
         '''
