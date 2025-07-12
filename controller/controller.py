@@ -194,21 +194,29 @@ class Controller:
 
         path: list[Vector2] = []
         graph: dict[Vector2, set[Vector2]] = defaultdict(set)
+        reverse_graph: dict[Vector2, set[Vector2]] = defaultdict(set)
 
         start_coord: Vector2 = Vector2(q_start, r_start)
+        closest_coord = start_coord
         end_coord: Vector2 = Vector2(q_end, r_end)
 
         queue: deque[Vector2] = deque()
         queue.append(start_coord)
 
         visited: set[Vector2] = set([start_coord])
+
+        depth = 0
         t = time.time()
         while queue:
+            depth += 1
             if time.time() - t > 0.3:
-                print(len(queue), f'time: {time.time() - t}')
+                print(len(queue), f'timehehehe: {time.time() - t}')
                 return []
             coord = queue.pop()
             if coord == end_coord:
+                break
+            elif depth > 7:
+                end_coord = closest_coord
                 break
             
             DIRECTIONS = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0)]
@@ -227,23 +235,30 @@ class Controller:
                 en_col = any(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.enemies)
                 l = ant_col or en_col
 
-                if (new_coord in self.map and (self.map[new_coord].type == HexType.ROCK or l)) or new_coord in visited:
+                if (new_coord in self.map and (self.map[new_coord].type == HexType.ROCK or \
+                    self.map[new_coord].type == HexType.ANTHILL)) or new_coord in visited:
                     continue
                 # добавляем в очередь
+                closest_coord = min(closest_coord, new_coord, key=lambda c: self.get_distance(c.q, c.r, end_coord.q, end_coord.r))
                 queue.appendleft(new_coord)
                 visited.add(new_coord)
                 # добавляем в граф
                 graph[coord].add(new_coord)
+                reverse_graph[new_coord].add(coord)
         
         path: list[Vector2] = []
-        
         cur_coord = end_coord
         while cur_coord != start_coord:
+            if time.time() - t > 0.3:
+                print(len(graph), f'time: {time.time() - t}')
+                return []
             path.append(cur_coord)
-            for key, value in graph.items():
-                if cur_coord in value:
-                    cur_coord = key
-                    continue
+            keys = reverse_graph[cur_coord]
+            cur_coord = keys.pop()
+            # for key, value in graph.items():
+            #     if cur_coord in value:
+            #         cur_coord = key
+            #         continue
         path.reverse()
         return path
         
@@ -383,8 +398,6 @@ class Controller:
         # Координаты основного гекса муравейника
         self.spot_house: Vector2 = Vector2.from_dict(data['spot'])
 
-        # Bebra
-        self._make_ins_outs()
 
         # Маршруты поиска еды для работников и для скаутов
         self.search_spiral_worker: list[Vector2] = cube_spiral(self.spot_house, 150, 1)
@@ -395,6 +408,9 @@ class Controller:
             cell1, cell2 = [cell for cell in self.houses if cell != self.spot_house]
             self.house_cell_1 = Vector2(cell1.q, cell1.r)
             self.house_cell_2 = Vector2(cell2.q, cell2.r)
+
+        # Bebra
+        self._make_ins_outs()
 
         # проверяем, что ход новый и начинаем новый ход
         if len(self.ants) == 0 or data['turnNo'] != self.turnNo:
@@ -464,6 +480,7 @@ class Controller:
 
         if ant.q == point.q and ant.r == point.r:
             point = self.house_cell_1 if point == self.hc1_in else self.house_cell_2
+            return [point]
 
         out = self.get_path(ant.q, ant.r, point.q, point.r)
         return out[:ant.SPEED]
@@ -502,7 +519,7 @@ class Controller:
             elif ant.q == self.house_cell_2.q and ant.r == self.house_cell_2.r:
                 self.move_ant(ant.id, [self.hc2_out])
             else:
-                if len(self.workers) >= 20 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
+                if len(self.workers) >= 12 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
                     continue
                 self.move_ant(ant.id, ant_state[ant.state](ant))
 

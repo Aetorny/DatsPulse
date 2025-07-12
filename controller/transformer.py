@@ -22,7 +22,7 @@ class DataTransformer:
                 r=hex['r'],
                 cost=hex['cost']
             ))
-        return {Vector2(hex.r, hex.q): hex for hex in hexagons}
+        return {Vector2(hex.q, hex.r): hex for hex in hexagons}
 
     @staticmethod
     def food_transform(data: list[dict[str, int]]) -> list[Food]:
