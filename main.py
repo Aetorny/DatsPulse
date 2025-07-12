@@ -323,7 +323,7 @@ class App:
         print(requests.post(URL+'register', headers=HEADERS).json())
 
     def scout_movement(self) -> None:
-        
+        ...
 
 
 def main() -> None:
@@ -336,5 +336,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    print(cube_spiral((3, 3), 4))
-    # main()
+    main()

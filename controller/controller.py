@@ -185,7 +185,7 @@ class Controller:
                         }]
                     })
 
-    def get_path(self, q_start: int, r_start: int, q_end: int, r_end: int) -> list[Vector2]:
+    def get_path(self, q_start: int, r_start: int, q_end: int, r_end: int, is_worker: bool = False) -> list[Vector2]:
         '''
         Найти ближайший путь от А до Б
 
@@ -231,12 +231,15 @@ class Controller:
                 # генерируем новую координату, которую надо посетить
                 new_coord = coord + d
                 # если попался камень или клетка уже посещена - пропускаем
-                ant_col = any(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.ants)
+                if is_worker:
+                    ant_col = any(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.workers)
+                else:
+                    ant_col = any(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.scouts)
                 en_col = any(new_coord.q == ant.q and new_coord.r == ant.r for ant in self.enemies)
                 l = ant_col or en_col
 
                 if (new_coord in self.map and (self.map[new_coord].type == HexType.ROCK or \
-                    self.map[new_coord].type == HexType.ANTHILL)) or new_coord in visited:
+                    self.map[new_coord].type == HexType.ANTHILL or l)) or new_coord in visited:
                     continue
                 # добавляем в очередь
                 closest_coord = min(closest_coord, new_coord, key=lambda c: self.get_distance(c.q, c.r, end_coord.q, end_coord.r))
@@ -459,8 +462,8 @@ class Controller:
         else:
             idx = l.index(Vector2(ant.q, ant.r))
             endpoint = l[idx+ant.SPEED+1]
-        
-        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED]
+        is_worker = ant.type == AntType.WORKER
+        return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r, is_worker=is_worker)[:ant.SPEED]
 
 
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
@@ -468,7 +471,7 @@ class Controller:
         Состояние движения к еде. Муравей движется напрямую, пока не дойдет до еды
         '''
         end = self.handled_food[ant]
-        return self.get_path(ant.q, ant.r, end.q, end.r)[:ant.SPEED]
+        return self.get_path(ant.q, ant.r, end.q, end.r, is_worker=True)[:ant.SPEED]
 
     def goto_base_state(self, ant: Ant) -> list[Vector2] | None:
         '''
@@ -476,16 +479,20 @@ class Controller:
         '''
 
         assert self.house_cell_1 and self.house_cell_2
-        point = self.hc1_in \
-                if self.get_distance(ant.q, ant.r, self.hc1_in.q, self.hc1_in.r) < \
-                    self.get_distance(ant.q, ant.r, self.hc2_in.q, self.hc2_in.r) \
-                    else self.hc2_in
+        if self.get_distance(ant.q, ant.r, self.hc1_in.q, self.hc1_in.r) < \
+            self.get_distance(ant.q, ant.r, self.hc2_in.q, self.hc2_in.r):
+            point = self.hc1_in
+            for ant in self.workers:
+                if ant.q == self.hc1_in.q and ant.r == self.hc1_in.r:
+                    point = self.hc2_in
+        else:
+            point = self.hc2_in
 
         if ant.q == point.q and ant.r == point.r:
             point = self.house_cell_1 if point == self.hc1_in else self.house_cell_2
             return [point]
 
-        out = self.get_path(ant.q, ant.r, point.q, point.r)
+        out = self.get_path(ant.q, ant.r, point.q, point.r, is_worker=True)
         return out[:ant.SPEED]
 
     def worker_logic(self) -> None:
@@ -522,11 +529,11 @@ class Controller:
             elif ant.q == self.house_cell_2.q and ant.r == self.house_cell_2.r:
                 self.move_ant(ant.id, [self.hc2_out])
             else:
-                if len(self.workers) >= 10 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
+                if len(self.workers) >= 20 and ant.q == self.spot_house.q and ant.r == self.spot_house.r:
                     continue
                 self.move_ant(ant.id, ant_state[ant.state](ant))
 
         for ant in self.scouts:
-            self.move_ant(ant.id, ant_state[ant.state](ant))
+            self.move_ant(ant.id, [Vector2(ant.q, ant.r+1)])
             
         # Дальше все сделает self.post_move
