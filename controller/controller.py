@@ -26,7 +26,6 @@ class Controller:
     def __init__(self) -> None:
         self.scouts: list[ScoutAnt] = []
         self.soldiers: list[SoldierAnt] = []
-        self.soldiers_positions: set[Vector2] = set()
         self.cells_around_base: set[Vector2] | None = None
         self.workers: list[WorkerAnt] = []
         self.moves: list[dict[str, Any]] = []
@@ -42,6 +41,11 @@ class Controller:
 
         self.is_run = True
         logging.basicConfig(filename='controller.log', level=logging.INFO)
+        self.moving_soldiers: dict[SoldierAnt, Vector2] = {} # солдат: random_direction
+
+    @property
+    def soldiers_positions(self):
+        return set(map(lambda s: Vector2(s.q, s.r), self.soldiers))
 
     def _make_ins_outs(self) -> None:
         n1 = neighbors(self.house_cell_1.q, self.house_cell_1.r)
@@ -104,26 +108,17 @@ class Controller:
         assert self.cells_around_base, 'cells_around_base must not be None'
 
         # получаем клетки вокруг муравейника
-        self.soldiers_positions = set()
-        for soldier in self.soldiers:
-            for cell in self.cells_around_base:
-                if soldier.q == cell.q and soldier.r == cell.r:
-                    self.soldiers_positions.add(Vector2(cell.q, cell.r))
-
-        # пытаемся найти солдата, который заспавнился в муравейнике
         soldier = None
         for soldier in self.soldiers:
             if soldier.q == self.spot_house.q and soldier.r == self.spot_house.r:
                 break
-            elif soldier.q == self.house_cell_1.q and soldier.r == self.house_cell_1.r:
-                break
-            elif soldier.q == self.house_cell_2.q and soldier.r == self.house_cell_2.r:
-                break
-        else:
+        if soldier.q != self.spot_house.q or soldier.r != self.spot_house.r:
             return
 
         # получаем свободные клетки для размещения
         empty_cells = list(self.cells_around_base.difference(self.soldiers_positions))
+        if len(empty_cells) == 0:
+            return
         assert len(empty_cells) > 0, 'empty_cells must not be empty'
         assert isinstance(soldier, SoldierAnt), 'soldier must be SoldierAnt'
         assert self.house_cell_1 and self.house_cell_2
@@ -302,6 +297,30 @@ class Controller:
         for cell in self.houses:
             temp.remove(Vector2(cell.q, cell.r))
         self.cells_around_base = temp
+    
+
+    def select_soldier_to_fight(self):
+        '''
+        Выбирает, кого отправлять в бой из военных
+        '''
+        random_soldier = None
+        for soldier in self.soldiers:
+            if self.cells_around_base is not None and Vector2(soldier.q, soldier.r) in self.cells_around_base:
+                random_soldier = soldier
+                break
+        assert isinstance(random_soldier, SoldierAnt)
+        self.moving_soldiers[random_soldier] = random.choice([Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)])
+        
+
+    def move_soldiers(self):
+        '''
+        Двигает движущихся солдат
+        '''
+        for soldier, direction in self.moving_soldiers.items():
+            pos = Vector2(soldier.q, soldier.r)
+            target_pos = soldier.SPEED * direction + pos
+            path = self.get_path(pos.q, pos.r, target_pos.q, target_pos.r)
+            self.move_ant(soldier.id, path[:soldier.SPEED])
 
     def new_turn(self) -> None:
         '''
@@ -313,9 +332,11 @@ class Controller:
         
         assert self.cells_around_base, 'cells_around_base must not be None'
 
-        # двигаем солдат на смежные клетки для защиты
-        if len(self.soldiers) - 1 < len(self.cells_around_base):
-            self.move_soldiers_to_guard()
+        if len(self.soldiers) - len(self.moving_soldiers) > len(self.cells_around_base):
+            self.select_soldier_to_fight()
+        self.move_soldiers()
+        self.move_soldiers_to_guard()
+
 
         # self.go_to_food()
         t = time.time()

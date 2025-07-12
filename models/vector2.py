@@ -33,3 +33,11 @@ class Vector2:
             'q': self.q,
             'r': self.r
         }
+    
+    def __mul__(self, other):
+        if isinstance(other, int):
+            return Vector2(self.q * other, self.r * other)
+        return NotImplemented
+
+    def __rmul__(self, other):
+        return self.__mul__(other)

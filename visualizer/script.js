@@ -386,7 +386,7 @@ async function fetchArenaData() {
         loadingElement.style.display = 'flex';
         statusTextElement.textContent = 'Загрузка данных...';
         
-        const response = await fetch('https://games-test.datsteam.dev/api/arena', {
+        const response = await fetch('https://games.datsteam.dev/api/arena', {
             headers: {
                 'X-Auth-Token': 'b12a46bf-db96-4d30-9add-72d1184e05d3'
             }
