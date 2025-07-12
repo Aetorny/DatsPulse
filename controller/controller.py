@@ -2,6 +2,7 @@ from typing import Any
 import requests
 import time
 import json
+import logging
 
 from models.ants.ant import Ant
 from models.ants.ant_type import AntType
@@ -34,6 +35,7 @@ class Controller:
         self.house_cell_2: Vector2 | None = None
 
         self.is_run = True
+        logging.basicConfig(filename='controller.log', level=logging.INFO)
 
     def get_distance(self, q1: int, r1: int, q2: int, r2: int) -> int:
         '''
@@ -80,11 +82,14 @@ class Controller:
         for soldier in self.soldiers:
             if soldier.q == self.spot_house.q and soldier.r == self.spot_house.r:
                 break
+        if soldier.q != self.spot_house.q or soldier.r != self.spot_house.r:
+            return
         
         # получаем свободные клетки для размещения
         empty_cells = list(self.cells_around_base.difference(self.soldiers_positions))
         assert len(empty_cells) > 0, 'empty_cells must not be empty'
         assert isinstance(soldier, SoldierAnt), 'soldier must be SoldierAnt'
+        assert self.house_cell_1 and self.house_cell_2
 
         # сортируем свободные клетки по близости (сначала - самые близкие)
         empty_cells.sort(key=lambda cell: self.get_distance(soldier.q, soldier.r, cell.q, cell.r))
@@ -102,9 +107,7 @@ class Controller:
                 self.soldiers_positions.add(Vector2(cell.q, cell.r))
                 return
             elif self.get_distance(soldier.q, soldier.r, cell.q, cell.r) == 2:
-                for home_cell in self.houses:
-                    if home_cell == self.spot_house:
-                        continue
+                for home_cell in [self.house_cell_1, self.house_cell_2]:
                     if self.get_distance(cell.q, cell.r, home_cell.q, home_cell.r) == 1 \
                         and self.get_distance(soldier.q, soldier.r, home_cell.q, home_cell.r) == 1:
                         self.moves.append({
@@ -120,7 +123,7 @@ class Controller:
                         self.soldiers_positions.add(Vector2(cell.q, cell.r))
                         return
             else:
-                cell1, cell2 = [cell for cell in self.houses if cell != self.spot_house]
+                cell1, cell2 = self.house_cell_1, self.house_cell_2
                 if self.get_distance(soldier.q, soldier.r, cell1.q, cell1.r) == 2:
                     cell1, cell2 = cell2, cell1
                 self.moves.append({
@@ -235,10 +238,8 @@ class Controller:
         assert self.cells_around_base, 'cells_around_base must not be None'
 
         # двигаем солдат на смежные клетки для защиты
-        t = time.time()
-        # if len(self.soldiers) - 1 < len(self.cells_around_base):
-        #     self.move_soldiers_to_guard()
-        print(f'move_soldiers_to_guard: {time.time() - t}')
+        if len(self.soldiers) - 1 < len(self.cells_around_base):
+            self.move_soldiers_to_guard()
 
         # self.go_to_food()
         t = time.time()
@@ -256,10 +257,12 @@ class Controller:
         '''
         Отправка запроса на движение муравьев
         '''
+        logging.info(f'moves: {moves}')
         data = {
             'moves': moves
         }
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
+        print(data)
         self.nextTurnIn: int = data['nextTurnIn']
         print(f'nextTurnIn: {self.nextTurnIn}')
         time.sleep(self.nextTurnIn)
@@ -426,6 +429,7 @@ class Controller:
             else:
                 ant.state = StateType.GOTO_FOOD
             # Если муравья нет в этом списке, то state == SEARCH
+            print(ant.id, ant.state)
 
         # Запускаем состояния и делаем запросы
         for ant in self.workers:
