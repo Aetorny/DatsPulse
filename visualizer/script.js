@@ -3,6 +3,8 @@ const HEX_RADIUS = 20;
 const HEX_WIDTH = HEX_RADIUS * 2;
 const HEX_HEIGHT = Math.sqrt(3) * HEX_RADIUS;
 
+const ENEMY_COLOR = '#494949ff';
+
 // Цвета для типов гексов
 const HEX_COLORS = {
     1: '#8e44ad', // муравейник - фиолетовый
