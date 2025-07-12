@@ -441,9 +441,12 @@ class Controller:
         has_gotofood = False
         # Присваиваем работникам состояния
         for ant, food in self.handled_food.items():
-            if ant.food.amount > 0 and not has_gotofood:
-                ant.state = StateType.GOTO_BASE
-                has_gotofood = True
+            if ant.food.amount > 0:
+                if not has_gotofood:
+                    ant.state = StateType.GOTO_BASE
+                    has_gotofood = True
+                else
+                    ant.state = StateType.PENDING
             else:
                 ant.state = StateType.GOTO_FOOD
             # Если муравья нет в этом списке, то state == SEARCH
