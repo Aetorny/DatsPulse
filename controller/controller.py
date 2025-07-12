@@ -147,7 +147,6 @@ class Controller:
 
         Поиск в ширину
         '''
-        
 
         path: list[Vector2] = []
         graph: dict[Vector2, set[Vector2]] = defaultdict(set)
@@ -445,7 +444,6 @@ class Controller:
             else:
                 ant.state = StateType.GOTO_FOOD
             # Если муравья нет в этом списке, то state == SEARCH
-            print(ant.id, ant.state)
 
         # Запускаем состояния и делаем запросы
         for ant in self.workers:
