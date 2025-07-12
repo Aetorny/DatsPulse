@@ -19,7 +19,7 @@ from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
 from collections import defaultdict
-from controller.geometry import circle, cube_spiral, rand_dir
+from controller.geometry import cube_spiral, rand_dir
 
 
 class Controller:
@@ -273,7 +273,7 @@ class Controller:
             'moves': moves
         }
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
-        logging.info(f'errors: {data.get('errors', [])}')
+        logging.info(f'errors: {data["errors"]}')
         self.nextTurnIn: int = data['nextTurnIn']
         print(f'nextTurnIn: {self.nextTurnIn}', time.time()-self.time)
         time.sleep(self.nextTurnIn)
@@ -381,6 +381,9 @@ class Controller:
         # if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
         #     d = rand_dir()
         #     return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
+        if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
+            d = rand_dir()
+            return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
 
         if Vector2(ant.q, ant.r) not in l:
             endpoint: Vector2 = l[0]
@@ -394,6 +397,7 @@ class Controller:
         
         return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED]
 
+
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
         '''
         Состояние движения к еде. Муравей движется напрямую, пока не дойдет до еды
@@ -406,10 +410,23 @@ class Controller:
         Состояние движения на базу. Муравей движется НЕ на базовую клетку, после возвращается на ближайшую клетку спирали (мб и не ближайшую, зависит от реализации)
         '''
 
-        point = random.choice([self.spot_house, self.house_cell_1, self.house_cell_2])
-        out = self.get_path(ant.q, ant.r, point.q, point.r)
-        return out[:ant.SPEED]
+        if ant.food.amount > 0:
+            assert self.house_cell_1 and self.house_cell_2
+            point = self.house_cell_1 \
+                    if self.get_distance(ant.q, ant.r, 
+                                         self.house_cell_1.q, 
+                                         self.house_cell_1.r) < \
+                       self.get_distance(ant.q, ant.r, 
+                                         self.house_cell_1.q, 
+                                         self.house_cell_1.r) \
+                     else self.house_cell_2
+            out = self.get_path(ant.q, ant.r, point.q, point.r)
+            return out[:ant.SPEED]
 
+        else:
+            l = self.search_spiral_scout if ant.type == AntType.SCOUT \
+                                     else self.search_spiral_worker
+            return self.get_path(ant.q, ant.r, l[10].q, l[10].r)[:ant.SPEED] 
 
     def worker_logic(self) -> None:
         # Нужно сделать правильную аннотацию
