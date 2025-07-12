@@ -147,7 +147,13 @@ class Controller:
 
         Поиск в ширину
         '''
-        DIRECTIONS = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0), Vector2(1, 1), Vector2(-1, -1)]
+        DIRECTIONS = [Vector2(0, 1), Vector2(0, -1), Vector2(1, 0), Vector2(-1, 0)]
+        if r_start % 2 == 1:
+            DIRECTIONS.append(Vector2(1, 1))
+            DIRECTIONS.append(Vector2(1, -1))
+        else:
+            DIRECTIONS.append(Vector2(-1, 1))
+            DIRECTIONS.append(Vector2(-1, -1))
 
         path: list[Vector2] = []
         graph: dict[Vector2, set[Vector2]] = defaultdict(set)
