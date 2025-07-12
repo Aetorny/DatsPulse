@@ -19,7 +19,7 @@ from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
 from collections import defaultdict
-from controller.geometry import cube_spiral
+from controller.geometry import cube_spiral, rand_dir
 
 
 class Controller:
@@ -375,27 +375,24 @@ class Controller:
         Состояние поиска муравья. Ищет позицию муравья в спирали и двигает его
         '''
         
-        endpoint = random.choice(list(self.map.keys()))
-        tries = 0
-        while (self.get_distance(endpoint.q, endpoint.r, ant.q, ant.r) < ant.SPEED+1 or \
-               self.map[endpoint].type == HexType.ROCK or \
-               self.get_distance(endpoint.q, endpoint.r, self.spot_house.q, self.spot_house.r) <= \
-               self.get_distance(ant.q, ant.r, self.spot_house.q, self.spot_house.r)
-               ):
+        l = self.search_spiral_scout if ant.type == AntType.SCOUT \
+                                     else self.search_spiral_worker
+        # рандомизация выхода с базы
+        if self.get_distance(ant.q, ant.r, self.house_cell_1.q, self.house_cell_2.r) < 5:
+            d = rand_dir()
+            return self.get_path(ant.q, ant.r, ant.q+d.q, ant.r+d.r)
 
-            tries += 1
-            if tries > 10:
-                return self.get_path(ant.q, ant.r, self.spot_house.q, self.spot_house.r)[:ant.SPEED]
-            new_end = random.choice(list(self.map.keys()))
-
-            if self.get_distance(new_end.q, new_end.r, self.spot_house.q, self.spot_house.r) >= \
-               self.get_distance(endpoint.q, endpoint.r, self.spot_house.q, self.spot_house.r):
-                endpoint = new_end
-
-            pass
-
-
+        if Vector2(ant.q, ant.r) not in l:
+            endpoint: Vector2 = l[0]
+            for i in l:
+                if self.get_distance(ant.q, ant.r, endpoint.q, endpoint.r) > \
+                   self.get_distance(ant.q, ant.r, i.q, i.r):
+                    endpoint = i
+        else:
+            idx = l.index(Vector2(ant.q, ant.r))
+            endpoint = l[idx+ant.SPEED+1]
         return self.get_path(ant.q, ant.r, endpoint.q, endpoint.r)[:ant.SPEED]
+
 
     def goto_food_state(self, ant: Ant) -> list[Vector2]:
         '''
