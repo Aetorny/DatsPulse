@@ -1,6 +1,8 @@
 from typing import Any
 import requests
 import time
+import json
+
 from models.ants.ant import Ant
 from models.ants.ant_type import AntType
 from models.ants.state_type import StateType
@@ -11,7 +13,6 @@ from models.ants.soldier import SoldierAnt
 from models.ants.scout import ScoutAnt
 from models.ants.worker import WorkerAnt
 from models.hex_type import HexType
-import json
 from collections import deque
 from controller.transformer import DataTransformer
 from controller.settings import *
@@ -228,10 +229,15 @@ class Controller:
         assert self.cells_around_base, 'cells_around_base must not be None'
 
         # двигаем солдат на смежные клетки для защиты
+        t = time.time()
         if len(self.soldiers) - 1 < len(self.cells_around_base):
             self.move_soldiers_to_guard()
+        print(f'move_soldiers_to_guard: {time.time() - t}')
+
         # self.go_to_food()
+        t = time.time()
         self.worker_logic()
+        print(f'worker_logic: {time.time() - t}')
     
     def save_response(self, data: dict[str, Any], filename: str = 'test.json'):
         '''
@@ -249,8 +255,8 @@ class Controller:
         }
         data = requests.post(URL + '/move', headers=HEADERS, json=data).json()
         self.nextTurnIn: int = data['nextTurnIn']
+        print(f'nextTurnIn: {self.nextTurnIn}')
         time.sleep(self.nextTurnIn)
-
 
     def register(self) -> None:
         '''
@@ -269,7 +275,9 @@ class Controller:
             return print(data)
         
         # сохраняем response в файл
-        # self.save_response(data)
+        t = time.time()
+        self.save_response(data)
+        print(f'save_response time: {time.time() - t}')
 
         # МУРАВЬИ
         self.ants: list[Ant] = DataTransformer.ants_transform(data['ants'])
@@ -309,8 +317,10 @@ class Controller:
         self.spot_house: Vector2 = Vector2.from_dict(data['spot'])
 
         # Маршруты поиска еды для работников и для скаутов
+        t = time.time()
         self.search_spiral_worker: list[Vector2] = cube_spiral(self.spot_house, 150, 1)
         self.search_spiral_scout: list[Vector2] = cube_spiral(self.spot_house, 150, 4)
+        print(f'cube_spiral time: {time.time() - t}')
 
         # Узнаем координаты двух оставшихся домов
         if self.house_cell_1 is None or self.house_cell_2 is None:
