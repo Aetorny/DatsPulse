@@ -343,7 +343,7 @@ class Controller:
         self.worker_logic()
         print(f'worker_logic: {time.time() - t}')
     
-    def save_response(self, data: dict[str, Any], filename: str = 'test.json'):
+    def save_response(self, data: dict[str, Any], filename: str = 'response.json'):
         '''
         Сохраняет ответ запроса в файл
         '''
